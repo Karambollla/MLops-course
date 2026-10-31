@@ -1,0 +1,13 @@
+{
+  "checked_on": "2026-10-31",
+  "onnx_toy_parity_max_abs": 4.76837158203125e-07,
+  "qdrant_in_memory_toy_recall_at_2": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "qdrant_upsert_points": 8,
+  "qdrant_filter_verified": true,
+  "note": "Native CPU toy checks only: not Docker, not real semantic model quality, not a housing solution."
+}

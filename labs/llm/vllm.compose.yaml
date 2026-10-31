@@ -1,0 +1,12 @@
+# Только дополнительный Linux NVIDIA стенд.
+name: mlops-vllm
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.10.2
+    command: --model Qwen/Qwen2.5-0.5B-Instruct --served-model-name course-llm --max-model-len 2048 --gpu-memory-utilization 0.70
+    gpus: all
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: ["model-cache:/root/.cache/huggingface"]
+    shm_size: 2g
+volumes:
+  model-cache:

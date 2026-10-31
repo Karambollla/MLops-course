@@ -1,0 +1,8 @@
+name: mlops-housing
+services:
+  api:
+    build: .
+    image: housing:course
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: ["../../work/artifacts:/models:ro"]
+    mem_limit: 768m

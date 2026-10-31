@@ -1,0 +1,26 @@
+{
+  "mappings": {
+    "properties": {
+      "text": {
+        "type": "text"
+      },
+      "topic": {
+        "type": "keyword"
+      },
+      "vector": {
+        "type": "knn_vector",
+        "dimension": 4,
+        "method": {
+          "name": "hnsw",
+          "engine": "lucene",
+          "space_type": "cosinesimil"
+        }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "knn": true
+    }
+  }
+}

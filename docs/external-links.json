@@ -1,0 +1,402 @@
+{
+  "checked_on": "2026-10-31",
+  "method": "HTTP GET with redirects; first 1024 bytes",
+  "results": [
+    {
+      "url": "https://airflow.apache.org/docs/apache-airflow/3.1.0/best-practices.html",
+      "status": 200,
+      "final_url": "https://airflow.apache.org/docs/apache-airflow/3.1.0/best-practices.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://airflow.apache.org/docs/apache-airflow/3.1.0/howto/docker-compose/index.html",
+      "status": 200,
+      "final_url": "https://airflow.apache.org/docs/apache-airflow/3.1.0/howto/docker-compose/index.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://airflow.apache.org/docs/apache-airflow/3.1.0/tutorial/index.html",
+      "status": 200,
+      "final_url": "https://airflow.apache.org/docs/apache-airflow/3.1.0/tutorial/index.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://clear.ml/docs/latest/docs/deploying_clearml/clearml_server/",
+      "status": 200,
+      "final_url": "https://clear.ml/docs/latest/docs/deploying_clearml/clearml_server/",
+      "result": "ok"
+    },
+    {
+      "url": "https://clear.ml/docs/latest/docs/getting_started/main/",
+      "status": 200,
+      "final_url": "https://clear.ml/docs/latest/docs/getting_started/main/",
+      "result": "ok"
+    },
+    {
+      "url": "https://clear.ml/docs/latest/docs/guides/set_offline/",
+      "status": 200,
+      "final_url": "https://clear.ml/docs/latest/docs/guides/set_offline/",
+      "result": "ok"
+    },
+    {
+      "url": "https://developer.hashicorp.com/terraform/language/state",
+      "status": 200,
+      "final_url": "https://developer.hashicorp.com/terraform/language/state",
+      "result": "ok"
+    },
+    {
+      "url": "https://developer.hashicorp.com/terraform/tutorials/docker-get-started",
+      "status": 200,
+      "final_url": "https://developer.hashicorp.com/terraform/tutorials/docker-get-started",
+      "result": "ok"
+    },
+    {
+      "url": "https://developer.hashicorp.com/vault/docs/auth/kubernetes",
+      "status": 200,
+      "final_url": "https://developer.hashicorp.com/vault/docs/auth/kubernetes",
+      "result": "ok"
+    },
+    {
+      "url": "https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2",
+      "status": 200,
+      "final_url": "https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2",
+      "result": "ok"
+    },
+    {
+      "url": "https://developer.hashicorp.com/vault/tutorials/get-started",
+      "status": 200,
+      "final_url": "https://developer.hashicorp.com/vault/tutorials/get-started",
+      "result": "ok"
+    },
+    {
+      "url": "https://developers.google.com/machine-learning/guides/rules-of-ml",
+      "status": 200,
+      "final_url": "https://developers.google.com/machine-learning/guides/rules-of-ml",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html",
+      "status": 200,
+      "final_url": "https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_checkmode.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html",
+      "status": 200,
+      "final_url": "https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_handlers.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.ansible.com/projects/ansible/latest/getting_started/index.html",
+      "status": 200,
+      "final_url": "https://docs.ansible.com/projects/ansible/latest/getting_started/index.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.astral.sh/uv/",
+      "status": 200,
+      "final_url": "https://docs.astral.sh/uv/",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.docker.com/get-started/workshop/",
+      "status": 200,
+      "final_url": "https://docs.docker.com/get-started/tutorials/run-an-app/",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.github.com/en/actions/tutorials/build-and-test-code/python",
+      "status": 200,
+      "final_url": "https://docs.github.com/en/actions/tutorials/build-and-test-code/python",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2560/user-guide/docs/tensorrtllm_backend/README.html",
+      "status": 200,
+      "final_url": "https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2560/user-guide/docs/tensorrtllm_backend/README.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2590/user-guide/docs/introduction/compatibility.html",
+      "status": 200,
+      "final_url": "https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2590/user-guide/docs/introduction/compatibility.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/architecture.html",
+      "status": 200,
+      "final_url": "https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/architecture.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/model_configuration.html",
+      "status": 200,
+      "final_url": "https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/model_configuration.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.opensearch.org/docs/2.19/install-and-configure/install-opensearch/docker/",
+      "status": 200,
+      "final_url": "https://docs.opensearch.org/2.19/install-and-configure/install-opensearch/docker/",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.opensearch.org/docs/2.19/vector-search/",
+      "status": 200,
+      "final_url": "https://docs.opensearch.org/2.19/vector-search/",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.python.org/3.12/tutorial/",
+      "status": 200,
+      "final_url": "https://docs.python.org/3.12/tutorial/",
+      "result": "ok"
+    },
+    {
+      "url": "https://docs.vllm.ai/en/v0.10.2/",
+      "status": 200,
+      "final_url": "https://docs.vllm.ai/en/v0.10.2/",
+      "result": "ok"
+    },
+    {
+      "url": "https://dvc.org/doc/start",
+      "status": 200,
+      "final_url": "https://doc.dvc.org/start",
+      "result": "ok"
+    },
+    {
+      "url": "https://dvc.org/doc/start/data-pipelines",
+      "status": 200,
+      "final_url": "https://doc.dvc.org/start/data-pipelines",
+      "result": "ok"
+    },
+    {
+      "url": "https://fastapi.tiangolo.com/deployment/concepts/",
+      "status": 200,
+      "final_url": "https://fastapi.tiangolo.com/deployment/concepts/",
+      "result": "ok"
+    },
+    {
+      "url": "https://fastapi.tiangolo.com/tutorial/testing/",
+      "status": 200,
+      "final_url": "https://fastapi.tiangolo.com/tutorial/testing/",
+      "result": "ok"
+    },
+    {
+      "url": "https://fullstackdeeplearning.com/course/2022/",
+      "status": 200,
+      "final_url": "https://fullstackdeeplearning.com/course/2022/",
+      "result": "ok"
+    },
+    {
+      "url": "https://github.com/DataTalksClub/mlops-zoomcamp",
+      "status": 200,
+      "final_url": "https://github.com/DataTalksClub/mlops-zoomcamp",
+      "result": "ok"
+    },
+    {
+      "url": "https://github.com/DataTalksClub/mlops-zoomcamp/tree/main/02-experiment-tracking",
+      "status": 200,
+      "final_url": "https://github.com/DataTalksClub/mlops-zoomcamp/tree/main/02-experiment-tracking",
+      "result": "ok"
+    },
+    {
+      "url": "https://github.com/helm/helm/releases/tag/v3.17.3",
+      "status": 200,
+      "final_url": "https://github.com/helm/helm/releases/tag/v3.17.3",
+      "result": "ok"
+    },
+    {
+      "url": "https://github.com/kubernetes-sigs/kind/releases/tag/v0.27.0",
+      "status": 200,
+      "final_url": "https://github.com/kubernetes-sigs/kind/releases/tag/v0.27.0",
+      "result": "ok"
+    },
+    {
+      "url": "https://github.com/sgl-project/sglang/tree/v0.4.10.post2",
+      "status": 200,
+      "final_url": "https://github.com/sgl-project/sglang/tree/v0.4.10.post2",
+      "result": "ok"
+    },
+    {
+      "url": "https://grafana.com/docs/grafana/latest/fundamentals/getting-started/",
+      "status": 200,
+      "final_url": "https://grafana.com/docs/grafana/latest/fundamentals/getting-started/",
+      "result": "ok"
+    },
+    {
+      "url": "https://helm.sh/docs/v3/chart_template_guide/",
+      "status": 200,
+      "final_url": "https://helm.sh/docs/v3/chart_template_guide/",
+      "result": "ok"
+    },
+    {
+      "url": "https://helm.sh/docs/v3/intro/quickstart/",
+      "status": 200,
+      "final_url": "https://helm.sh/docs/v3/intro/quickstart/",
+      "result": "ok"
+    },
+    {
+      "url": "https://huggingface.co/BAAI/bge-small-en-v1.5",
+      "status": 200,
+      "final_url": "https://huggingface.co/BAAI/bge-small-en-v1.5",
+      "result": "ok"
+    },
+    {
+      "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct",
+      "status": 200,
+      "final_url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct",
+      "result": "ok"
+    },
+    {
+      "url": "https://kind.sigs.k8s.io/docs/user/quick-start/",
+      "status": 200,
+      "final_url": "https://kind.sigs.k8s.io/docs/user/quick-start/",
+      "result": "ok"
+    },
+    {
+      "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+      "status": 200,
+      "final_url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+      "result": "ok"
+    },
+    {
+      "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+      "status": 200,
+      "final_url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+      "result": "ok"
+    },
+    {
+      "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/",
+      "status": 200,
+      "final_url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/",
+      "result": "ok"
+    },
+    {
+      "url": "https://mlflow.org/docs/3.1.1/ml/model-registry/",
+      "status": 200,
+      "final_url": "https://mlflow.org/docs/3.1.1/ml/model-registry/",
+      "result": "ok"
+    },
+    {
+      "url": "https://mlflow.org/docs/3.1.1/ml/tracking/",
+      "status": 200,
+      "final_url": "https://mlflow.org/docs/3.1.1/ml/tracking/",
+      "result": "ok"
+    },
+    {
+      "url": "https://numpy.org/doc/stable/user/basics.html",
+      "status": 200,
+      "final_url": "https://numpy.org/doc/stable/user/basics.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://onnx.ai/sklearn-onnx/",
+      "status": 200,
+      "final_url": "https://onnx.ai/sklearn-onnx/",
+      "result": "ok"
+    },
+    {
+      "url": "https://onnxruntime.ai/docs/get-started/with-python.html",
+      "status": 200,
+      "final_url": "https://onnxruntime.ai/docs/get-started/with-python.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://pandas.pydata.org/docs/getting_started/intro_tutorials/",
+      "status": 200,
+      "final_url": "https://pandas.pydata.org/docs/getting_started/intro_tutorials/",
+      "result": "ok"
+    },
+    {
+      "url": "https://prometheus.io/docs/introduction/first_steps/",
+      "status": 200,
+      "final_url": "https://prometheus.io/docs/introduction/first_steps/",
+      "result": "ok"
+    },
+    {
+      "url": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/",
+      "status": 200,
+      "final_url": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/",
+      "result": "ok"
+    },
+    {
+      "url": "https://prometheus.io/docs/prometheus/latest/querying/basics/",
+      "status": 200,
+      "final_url": "https://prometheus.io/docs/prometheus/latest/querying/basics/",
+      "result": "ok"
+    },
+    {
+      "url": "https://qdrant.tech/documentation/concepts/filtering/",
+      "status": 200,
+      "final_url": "https://qdrant.tech/documentation/search/filtering/",
+      "result": "ok"
+    },
+    {
+      "url": "https://qdrant.tech/documentation/fastembed/",
+      "status": 200,
+      "final_url": "https://qdrant.tech/documentation/fastembed/",
+      "result": "ok"
+    },
+    {
+      "url": "https://qdrant.tech/documentation/quickstart/",
+      "status": 200,
+      "final_url": "https://qdrant.tech/documentation/quickstart/",
+      "result": "ok"
+    },
+    {
+      "url": "https://registry.terraform.io/providers/kreuzwerker/docker/3.0.2/docs",
+      "status": 200,
+      "final_url": "https://registry.terraform.io/providers/kreuzwerker/docker/3.0.2/docs",
+      "result": "ok"
+    },
+    {
+      "url": "https://releases.hashicorp.com/terraform/1.11.4/",
+      "status": 200,
+      "final_url": "https://releases.hashicorp.com/terraform/1.11.4/",
+      "result": "ok"
+    },
+    {
+      "url": "https://scikit-learn.org/stable/common_pitfalls.html",
+      "status": 200,
+      "final_url": "https://scikit-learn.org/stable/common_pitfalls.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://scikit-learn.org/stable/datasets/real_world.html#california-housing-dataset",
+      "status": 200,
+      "final_url": "https://scikit-learn.org/stable/datasets/real_world.html#california-housing-dataset",
+      "result": "ok"
+    },
+    {
+      "url": "https://scikit-learn.org/stable/model_persistence.html",
+      "status": 200,
+      "final_url": "https://scikit-learn.org/stable/model_persistence.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://scikit-learn.org/stable/modules/model_evaluation.html",
+      "status": 200,
+      "final_url": "https://scikit-learn.org/stable/modules/model_evaluation.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://www.elastic.co/guide/en/elasticsearch/reference/8.17/docs-bulk.html",
+      "status": 200,
+      "final_url": "https://www.elastic.co/guide/en/elasticsearch/reference/8.17/docs-bulk.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://www.elastic.co/guide/en/elasticsearch/reference/8.17/knn-search.html",
+      "status": 200,
+      "final_url": "https://www.elastic.co/guide/en/elasticsearch/reference/8.17/knn-search.html",
+      "result": "ok"
+    },
+    {
+      "url": "https://www.python.org/downloads/",
+      "status": 200,
+      "final_url": "https://www.python.org/downloads/",
+      "result": "ok"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+.venv/
+.venv-*/
+.tools/
+work/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.env
+*.tfstate*
+.terraform/
+*.joblib
+*.onnx
+.DS_Store

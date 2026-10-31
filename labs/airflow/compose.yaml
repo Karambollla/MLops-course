@@ -1,0 +1,18 @@
+name: mlops-airflow
+services:
+  airflow:
+    build:
+      context: ../..
+      dockerfile: labs/airflow/Dockerfile
+    command: standalone
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__PARALLELISM: "2"
+    volumes:
+      - airflow-home:/opt/airflow
+      - ./dags:/opt/airflow/dags:ro
+      - ../../work:/work
+    mem_limit: 4g
+volumes:
+  airflow-home:

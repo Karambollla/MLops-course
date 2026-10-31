@@ -1,0 +1,9 @@
+name: mlops-mlflow
+services:
+  mlflow:
+    build: .
+    ports: ["127.0.0.1:5001:5000"]
+    volumes: ["mlflow-data:/data"]
+    mem_limit: 1g
+volumes:
+  mlflow-data:

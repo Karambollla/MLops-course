@@ -1,0 +1,13 @@
+.git
+.venv*
+.tools
+**/__pycache__
+**/*.egg-info
+**/.pytest_cache
+**/.env
+**/*.tfstate*
+**/.terraform
+work/*
+!work/artifacts/
+work/artifacts/*
+!work/artifacts/model.joblib

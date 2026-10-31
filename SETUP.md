@@ -1,0 +1,103 @@
+# Подготовка окружения
+
+Все команды выполняются из корня курса, если явно не указано другое. Не запускай несколько тяжёлых стендов одновременно.
+
+## Основная среда
+
+Нужны Python **3.12**, Git, Docker с Compose v2 или новее, `curl`, `make`. Для Kubernetes нужны `kubectl`, kind **0.27.0**, Helm **3.17.3**. Учебные версии фиксируются в [матрице](docs/versions.md); это воспроизводимый набор, а не рекомендация использовать старые релизы в production.
+
+Проверь:
+
+```bash
+uname -m
+python3.12 --version
+docker version
+docker compose version
+docker info --format '{{.Architecture}} {{.MemTotal}}'
+```
+
+На Mac ожидается `arm64`. Наличие Docker CLI не доказывает доступность daemon: серверная часть `docker version` тоже должна ответить. Открой Docker Desktop или запусти свой Docker runtime. Если терминал агента не имеет доступа к сокету, команды запуска выполни в своём терминале.
+
+Python 3.14 не используется для основного проекта. Установи Python 3.12 через официальный установщик или существующий менеджер версий. Альтернатива с уже установленным `uv`:
+
+```bash
+uv python install 3.12
+uv venv --python 3.12 .venv
+source .venv/bin/activate
+uv pip install -r labs/housing/requirements.txt
+uv pip install --no-deps -e labs/housing
+```
+
+Через стандартный Python:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r labs/housing/requirements.txt
+python -m pip install --no-deps -e labs/housing
+make check
+make test
+```
+
+Для MLflow, DVC, ClearML, ONNX и Qdrant создавай отдельные окружения по инструкциям модулей. Не устанавливай Airflow и GPU serving в основное окружение: у них собственные ограничения зависимостей.
+
+## Память и диск
+
+На машине с 16 ГБ RAM выдели Docker ориентировочно 6–8 ГБ, оставив память macOS. Значения ниже — бюджет планирования, а не измеренное потребление.
+
+| Стенд | Планируемая память | Как запускать |
+|---|---|---|
+| API + MLflow | 1–2 ГБ | Допустим совместный запуск |
+| Airflow standalone | 3–4 ГБ | Остановить другие тяжёлые стенды |
+| Prometheus + Grafana + API | 1–2 ГБ | После завершения Airflow |
+| kind + один API | 3–4 ГБ | Без ClearML и поисковых движков |
+| Vault dev | Лимит 1 ГБ | Учесть пусковой расход памяти; 256 МиБ недостаточно на проверенном стенде |
+| Qdrant | До 1 ГБ на маленьком корпусе | Отдельно от Elasticsearch |
+| Elasticsearch или OpenSearch | 2–3 ГБ каждый | Строго по одному |
+| ClearML Server | 6–8 ГБ и несколько сервисов | Дополнительный стенд; см. модуль |
+| NVIDIA serving | Зависит от VRAM, модели, контекста | Не запускается на Mac как CUDA-стенд |
+
+Начни с 15–20 ГБ свободного места для первых модулей. Для полного набора CPU-образов и build cache закладывай примерно 30 ГБ; при проверке одни только images заняли около 16 ГБ. NVIDIA-образы и веса моделей потребуют существенно больше; их не скачивай для CPU-маршрута. На 8 ГБ RAM оставь Python, локальный MLflow и Qdrant; тяжёлые лабораторные перенеси на совместимый стенд. Облачная аренда не обязательна.
+
+## Данные и пути
+
+Создай рабочую папку и скачай датасет один раз:
+
+```bash
+mkdir -p work
+python -m housing.data --output work/housing.csv
+```
+
+Первый запуск требует интернет-доступа к источнику California Housing. Скрипт сохраняет CSV и SHA-256; повторные запуски используй с тем же файлом. При недоступности источника остановись и восстанови доступ или скопируй ранее скачанный файл с известной контрольной суммой. Синтетические данные не подменяют реальный датасет в отчёте.
+
+`work/`, `.venv/`, Terraform state, секреты и веса моделей исключены из Git. Заготовка `.gitignore` уже создана. Для DVC отдельно инициализируй Git в собственной рабочей копии, если его ещё нет.
+
+## Локальный Kubernetes
+
+Установи закреплённые версии инструментов по официальным release pages из [источников](RESOURCES.md). Затем:
+
+```bash
+kind create cluster --name mlops-course --image kindest/node:v1.32.2
+kubectl config current-context
+kubectl get nodes
+```
+
+Ожидается контекст `kind-mlops-course` и узел в состоянии Ready. Образ приложения сначала собери и загрузи в kind по модулю 07. Не применяй учебные манифесты в рабочий кластер.
+
+После занятий:
+
+```bash
+kind delete cluster --name mlops-course
+```
+
+## Жизненный цикл Compose
+
+Пример отдельного стенда:
+
+```bash
+docker compose -f labs/mlflow/compose.yaml up -d --build
+docker compose -f labs/mlflow/compose.yaml logs --tail=60
+docker compose -f labs/mlflow/compose.yaml down
+```
+
+Обычный `down` сохраняет именованные volumes. `down -v` удаляет данные только выбранного стенда: выполняй его после экспорта нужных результатов. Не используй глобальную очистку Docker для решения локальной проблемы.

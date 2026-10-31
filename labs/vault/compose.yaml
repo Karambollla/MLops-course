@@ -1,0 +1,10 @@
+name: mlops-vault
+services:
+  vault:
+    image: hashicorp/vault:1.19.0
+    command: server -dev -dev-root-token-id=course-root -dev-listen-address=0.0.0.0:8200
+    cap_add: [IPC_LOCK]
+    ports: ["127.0.0.1:8200:8200"]
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    mem_limit: 1g

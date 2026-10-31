@@ -1,0 +1,500 @@
+{
+  "checked_on": "2026-10-31",
+  "method": "docker buildx imagetools inspect --raw; no pull/runtime",
+  "images": [
+    {
+      "image": "python:3.12.12-slim",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v5"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "386",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "riscv64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ],
+      "media_type": "application/vnd.oci.image.index.v1+json"
+    },
+    {
+      "image": "apache/airflow:3.1.0-python3.12",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ],
+      "media_type": "application/vnd.oci.image.index.v1+json"
+    },
+    {
+      "image": "allegroai/clearml:1.16.1",
+      "exit_code": 0,
+      "platforms": [],
+      "media_type": "application/vnd.docker.distribution.manifest.v2+json"
+    },
+    {
+      "image": "docker.elastic.co/elasticsearch/elasticsearch:7.17.22",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "mongo:4.4.29",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "amd64",
+          "os": "windows",
+          "os.version": "10.0.20348.2402"
+        },
+        {
+          "architecture": "amd64",
+          "os": "windows",
+          "os.version": "10.0.17763.5696"
+        }
+      ],
+      "media_type": "application/vnd.oci.image.index.v1+json"
+    },
+    {
+      "image": "redis:7.2.5",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v5"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "386",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "mips64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ],
+      "media_type": "application/vnd.oci.image.index.v1+json"
+    },
+    {
+      "image": "prom/prometheus:v3.2.1",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "grafana/grafana:11.6.0",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "hashicorp/vault:1.19.0",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "386",
+          "os": "linux"
+        },
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v6"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "nginx:1.27.5-alpine",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v6"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "386",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "riscv64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ],
+      "media_type": "application/vnd.oci.image.index.v1+json"
+    },
+    {
+      "image": "qdrant/qdrant:v1.13.6",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ],
+      "media_type": "application/vnd.oci.image.index.v1+json"
+    },
+    {
+      "image": "docker.elastic.co/elasticsearch/elasticsearch:8.17.3",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "opensearchproject/opensearch:2.19.1",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "nvcr.io/nvidia/tritonserver:25.06-py3",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "nvcr.io/nvidia/tritonserver:25.06-trtllm-python-py3",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "vllm/vllm-openai:v0.10.2",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        },
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    },
+    {
+      "image": "lmsysorg/sglang:v0.4.10.post2-cu126",
+      "exit_code": 0,
+      "platforms": [],
+      "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+      "note": "Corrected from missing generic tag after registry check"
+    },
+    {
+      "image": "kindest/node:v1.32.2",
+      "exit_code": 0,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ],
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json"
+    }
+  ]
+}

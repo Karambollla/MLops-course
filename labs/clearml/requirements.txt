@@ -1,0 +1,2 @@
+-r ../housing/requirements.txt
+clearml==1.18.0

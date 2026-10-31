@@ -1,0 +1,9 @@
+groups:
+  - name: housing
+    rules:
+      - alert: HousingTargetDown
+        expr: up{job="housing"} == 0
+        for: 30s
+        labels: {severity: warning}
+        annotations:
+          summary: "Housing scrape target is down"

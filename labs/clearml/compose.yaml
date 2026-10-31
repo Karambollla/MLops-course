@@ -1,0 +1,48 @@
+# Дополнительная лабораторная: Linux x86_64. ARM64 не заявлен.
+name: mlops-clearml
+x-clearml: &clearml
+  image: allegroai/clearml:1.16.1
+  environment: &environment
+    CLEARML_ELASTIC_SERVICE_HOST: elasticsearch
+    CLEARML_ELASTIC_SERVICE_PORT: "9200"
+    CLEARML_MONGODB_SERVICE_HOST: mongo
+    CLEARML_MONGODB_SERVICE_PORT: "27017"
+    CLEARML_REDIS_SERVICE_HOST: redis
+    CLEARML_REDIS_SERVICE_PORT: "6379"
+    CLEARML_SERVER_DEPLOYMENT_TYPE: linux
+    CLEARML_FILES_HOST: http://localhost:8081
+  depends_on: [elasticsearch, mongo, redis]
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    volumes: ["elastic-data:/usr/share/elasticsearch/data"]
+  mongo:
+    image: mongo:4.4.29
+    volumes: ["mongo-data:/data/db"]
+  redis:
+    image: redis:7.2.5
+    volumes: ["redis-data:/data"]
+  apiserver:
+    <<: *clearml
+    command: apiserver
+    volumes: ["file-data:/mnt/fileserver"]
+    ports: ["127.0.0.1:8008:8008"]
+  fileserver:
+    <<: *clearml
+    command: fileserver
+    ports: ["127.0.0.1:8081:8081"]
+    volumes: ["file-data:/mnt/fileserver"]
+  webserver:
+    <<: *clearml
+    command: webserver
+    depends_on: [apiserver]
+    ports: ["127.0.0.1:8088:80"]
+volumes:
+  elastic-data:
+  mongo-data:
+  redis-data:
+  file-data:

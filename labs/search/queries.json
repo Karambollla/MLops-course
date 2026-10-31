@@ -1,0 +1,58 @@
+[
+  {
+    "id": "release",
+    "text": "restore old model after a bad deployment",
+    "vector": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "relevant": [
+      1,
+      2
+    ]
+  },
+  {
+    "id": "pipeline",
+    "text": "repeat a failed training workflow",
+    "vector": [
+      0,
+      1,
+      0,
+      0
+    ],
+    "relevant": [
+      3,
+      4
+    ]
+  },
+  {
+    "id": "monitoring",
+    "text": "see request errors and latency",
+    "vector": [
+      0,
+      0,
+      1,
+      0
+    ],
+    "relevant": [
+      5,
+      6
+    ]
+  },
+  {
+    "id": "security",
+    "text": "restrict credential access",
+    "vector": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "relevant": [
+      7,
+      8
+    ]
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "checked_on": "2026-10-31",
+  "platform": "macOS ARM64 Python 3.12.12; no Docker daemon",
+  "results": [
+    {
+      "check": "ansible syntax",
+      "exit_code": 0,
+      "output": "\nplaybook: labs/ansible/playbook.yaml\n"
+    },
+    {
+      "check": "ansible temporary local run 1",
+      "exit_code": 0,
+      "output": "\nPLAY [Configure isolated lab container] ****************************************\n\nTASK [Create configuration directory] ******************************************\nchanged: [localhost]\n\nTASK [Write example service configuration] *************************************\nchanged: [localhost]\n\nPLAY RECAP *********************************************************************\nlocalhost                  : ok=2    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   \n\n"
+    },
+    {
+      "check": "ansible temporary local run 2",
+      "exit_code": 0,
+      "output": "\nPLAY [Configure isolated lab container] ****************************************\n\nTASK [Create configuration directory] ******************************************\nok: [localhost]\n\nTASK [Write example service configuration] *************************************\nok: [localhost]\n\nPLAY RECAP *********************************************************************\nlocalhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   \n\n"
+    },
+    {
+      "check": "MLflow 3.1.1 native HTTP server",
+      "exit_code": 0,
+      "verified": [
+        "SQLite backend",
+        "HTTP tracking",
+        "artifact proxy roundtrip",
+        "sklearn toy registration",
+        "candidate alias"
+      ],
+      "note": "Toy artifact validates infrastructure; not a solution or result of housing exercises."
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+name: mlops-monitoring
+services:
+  api:
+    build: ../housing
+    image: housing:course
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: ["../../work/artifacts:/models:ro"]
+    mem_limit: 768m
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    ports: ["127.0.0.1:9090:9090"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    mem_limit: 512m
+  grafana:
+    image: grafana/grafana:11.6.0
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: student
+      GF_SECURITY_ADMIN_PASSWORD: local-course-only
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    mem_limit: 512m
+volumes:
+  prometheus-data:
+  grafana-data:

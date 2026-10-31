@@ -1,0 +1,90 @@
+[
+  {
+    "id": 1,
+    "text": "Rollback restores the previous model version after a failed release.",
+    "topic": "release",
+    "vector": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "id": 2,
+    "text": "Readiness checks if the model is loaded and predictions can be served.",
+    "topic": "serving",
+    "vector": [
+      0.8,
+      0.2,
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "id": 3,
+    "text": "Airflow retries repeat failed tasks; publication must be idempotent.",
+    "topic": "pipeline",
+    "vector": [
+      0.1,
+      1.0,
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "id": 4,
+    "text": "A data hash links a model to a specific dataset snapshot.",
+    "topic": "pipeline",
+    "vector": [
+      0.0,
+      0.8,
+      0.2,
+      0.0
+    ]
+  },
+  {
+    "id": 5,
+    "text": "Prometheus collects metrics and evaluates alert rules.",
+    "topic": "monitoring",
+    "vector": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  {
+    "id": 6,
+    "text": "Grafana displays latency and errors from a Prometheus datasource.",
+    "topic": "monitoring",
+    "vector": [
+      0.0,
+      0.0,
+      0.8,
+      0.2
+    ]
+  },
+  {
+    "id": 7,
+    "text": "Vault policies restrict which secrets an application can read.",
+    "topic": "security",
+    "vector": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  {
+    "id": 8,
+    "text": "Short lived tokens limit the lifetime of application credentials.",
+    "topic": "security",
+    "vector": [
+      0.1,
+      0.0,
+      0.1,
+      0.8
+    ]
+  }
+]

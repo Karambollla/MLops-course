@@ -1,0 +1,1 @@
+{"model":"course-llm","messages":[{"role":"user","content":"Explain model rollback in one sentence."}],"max_tokens":64,"temperature":0,"stream":true}

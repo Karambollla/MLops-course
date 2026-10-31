@@ -1,0 +1,13 @@
+# Только дополнительный Linux NVIDIA стенд; запускать отдельно от vLLM.
+name: mlops-sglang
+services:
+  sglang:
+    image: lmsysorg/sglang:v0.4.10.post2-cu126
+    entrypoint: [python3, -m, sglang.launch_server]
+    command: --model-path Qwen/Qwen2.5-0.5B-Instruct --served-model-name course-llm --host 0.0.0.0 --port 30000 --context-length 2048 --mem-fraction-static 0.70
+    gpus: all
+    ports: ["127.0.0.1:8000:30000"]
+    volumes: ["model-cache:/root/.cache/huggingface"]
+    shm_size: 2g
+volumes:
+  model-cache:

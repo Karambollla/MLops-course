@@ -1,0 +1,234 @@
+{
+  "checked_on": "2026-10-31",
+  "environment": "Docker linux/aarch64, 10 CPU, 8321712128 bytes RAM; macOS ARM64",
+  "fixture": "Temporary synthetic sklearn Pipeline; not a housing course solution",
+  "results": [
+    {
+      "check": "housing",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "image build",
+          "live 200 / ready 503 without model",
+          "validation 422 incl nonfinite",
+          "ready/predict 200 with toy model",
+          "native/container parity",
+          "UID10001",
+          "read-only model mount",
+          "restart persistence"
+        ],
+        "prediction": [
+          25.979907515512902
+        ]
+      }
+    },
+    {
+      "check": "mlflow",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "image build",
+          "HTTP tracking",
+          "artifact proxy",
+          "model registration/signature",
+          "alias",
+          "volume survives restart"
+        ],
+        "host_port": 5001,
+        "container_port": 5000
+      }
+    },
+    {
+      "check": "airflow",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "image build",
+          "isolated ML venv",
+          "standalone UI",
+          "DAG import without errors",
+          "unpause/trigger",
+          "validate_data success",
+          "intentional training NotImplementedError",
+          "metadata survives restart"
+        ],
+        "training_implemented": false,
+        "note": "Retry may be pending; student train/gate/publish deliberately remain exercises."
+      }
+    },
+    {
+      "check": "monitoring",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "Prometheus scrape",
+          "Grafana datasource/dashboard provisioning",
+          "20 measured requests",
+          "alert firing on stop",
+          "alert resolves on recovery"
+        ],
+        "alert_detection_seconds": 36.1
+      }
+    },
+    {
+      "check": "vault",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "dev server",
+          "KV v2",
+          "least privilege policy",
+          "read allowed",
+          "other path/write 403",
+          "token TTL expiry"
+        ],
+        "secrets_recorded": false
+      }
+    },
+    {
+      "check": "ansible",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "image build",
+          "Linux container",
+          "syntax",
+          "bind-mounted output"
+        ],
+        "first_changed": 2,
+        "second_changed": 0
+      }
+    },
+    {
+      "check": "qdrant",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "server",
+          "upsert deduplication",
+          "filter",
+          "dimension error",
+          "snapshot",
+          "volume restart"
+        ],
+        "toy_recall_at_2": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "snapshot_created": true
+      }
+    },
+    {
+      "check": "elasticsearch",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "image starts on ARM64",
+          "provided mapping",
+          "bulk per-item errors",
+          "stable IDs",
+          "keyword",
+          "vector top2",
+          "volume restart"
+        ],
+        "documents": 8
+      }
+    },
+    {
+      "check": "opensearch",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "image starts on ARM64",
+          "provided mapping",
+          "bulk per-item errors",
+          "stable IDs",
+          "keyword",
+          "vector top2",
+          "volume restart"
+        ],
+        "documents": 8
+      }
+    },
+    {
+      "check": "terraform",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "provider init/validate",
+          "local Docker apply",
+          "HTTP endpoint",
+          "second plan has no changes",
+          "manual deletion detected",
+          "recreate",
+          "destroy"
+        ],
+        "user_state_modified": false
+      }
+    },
+    {
+      "check": "kubernetes-helm",
+      "status": "pass",
+      "details": {
+        "checks": [
+          "kind ARM64 Kubernetes1.32.2",
+          "original Deployment/Service",
+          "Running but unready without model",
+          "immutable v1/v2 images built by original Dockerfile",
+          "model-aware readiness",
+          "predict through Service",
+          "missing image diagnosis",
+          "Deployment rollback",
+          "Helm install/upgrade/rollback",
+          "failed atomic upgrade recovers prior model"
+        ],
+        "kubeconfig": "temporary only",
+        "student_model_used": false
+      }
+    }
+  ],
+  "python_container_tests": {
+    "passed": 6,
+    "skipped_student_exercises": 2,
+    "platform": "linux/arm64 Python3.12.12"
+  },
+  "not_run": [
+    {
+      "check": "ClearML Server/Agent",
+      "reason": "Additional Linux x86_64 course route; no emulation used on ARM64"
+    },
+    {
+      "check": "Triton Inference Server",
+      "reason": "Additional Linux x86_64 route not executed; native ONNX CPU check remains separate"
+    },
+    {
+      "check": "TensorRT-LLM/vLLM/SGLang",
+      "reason": "NVIDIA GPU unavailable"
+    },
+    {
+      "check": "student train/gate/publish implementations",
+      "reason": "Exercises intentionally not implemented by validation"
+    }
+  ],
+  "fixed": [
+    {
+      "file": "labs/mlflow/compose.yaml",
+      "issue": "Host port5000 occupied by macOS Control Center",
+      "fix": "Host5001 -> container5000; SDK/docs updated"
+    },
+    {
+      "file": "labs/vault/compose.yaml",
+      "issue": "OOMKilled at memory limit256MiB",
+      "fix": "1GiB limit; health, policy and TTL verified"
+    },
+    {
+      "file": "labs/terraform/main.tf",
+      "issue": "Repeat plan replaced container due bridge -> null",
+      "fix": "Explicit network_mode=bridge; empty repeat plan verified"
+    }
+  ],
+  "network": "Transient Docker registry EOFs recovered by retrying official image downloads; no registry replacement.",
+  "cleanup": "Only temporary Compose projects, kind cluster and Terraform container/state were used; final Docker inventory checked separately."
+}
