@@ -66,4 +66,4 @@ npm exec --yes --package markdownlint-cli2@0.18.1 -- markdownlint-cli2 '**/*.md'
 
 Сетевые источники: `make links`. Для каждого Compose-файла отдельно выполни `docker compose -f ПУТЬ config --quiet`. После запуска Docker повтори runtime-проверки по практике модулей и дополни собственный отчёт.
 
-Машиночитаемые результаты: [ссылки](external-links.json), [image manifests](image-manifests.json), [зависимости](dependency-checks.json), [нативные runtime-пробы](runtime-checks.json), [CPU-библиотеки](cpu-library-checks.json). Статус подготовки курса отделён от [прогресса обучения](../PROGRESS.md).
+Машиночитаемые результаты: [ссылки](external-links.json), [image manifests](image-manifests.json), [зависимости](dependency-checks.json), [нативные runtime-пробы](runtime-checks.json), [CPU-библиотеки](cpu-library-checks.json).
