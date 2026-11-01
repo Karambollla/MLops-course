@@ -1,6 +1,6 @@
 {
   "checked_on": "2026-10-31",
-  "environment": "Docker linux/aarch64, 10 CPU, 8321712128 bytes RAM; macOS ARM64",
+  "environment": "Docker linux/aarch64; functional checks, not a hardware benchmark",
   "fixture": "Temporary synthetic sklearn Pipeline; not a housing course solution",
   "results": [
     {
