@@ -1,5 +1,11 @@
 """Учебная заготовка. Контракт: README.md рядом с файлом."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
+import hashlib
+import json
+import subprocess
 from pathlib import Path
 
 

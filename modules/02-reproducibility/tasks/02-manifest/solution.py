@@ -1,6 +1,13 @@
 """Учебная заготовка. Контракт: README.md рядом с файлом."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
+from copy import deepcopy
 from pathlib import Path
+
+from course_tasks import load_task
+from housing.features import FEATURES
 
 
 def build_manifest(

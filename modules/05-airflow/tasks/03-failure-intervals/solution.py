@@ -1,5 +1,11 @@
 """Учебная заготовка. Контракт: README.md рядом с файлом."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
+from copy import deepcopy
+from datetime import datetime, timedelta, timezone
+
 
 def interval_manifest(start: str, end: str) -> dict:
     # TODO: aware datetime, UTC, границы одного дня без now().

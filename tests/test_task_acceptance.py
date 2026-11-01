@@ -3,7 +3,6 @@
 import copy
 import json
 import subprocess
-import sys
 from types import SimpleNamespace
 
 import pytest
@@ -76,8 +75,8 @@ def test_helm_accepts_selector_subset_and_valid_resource_quantities(
         return subprocess.CompletedProcess(command, 0, json.dumps(result), "")
 
     # YAML parsing is orthogonal here: feed parsed resources from two render calls.
-    monkeypatch.setitem(
-        sys.modules,
+    monkeypatch.setattr(
+        checker,
         "yaml",
         SimpleNamespace(safe_load_all=json.loads, safe_dump=json.dumps),
     )

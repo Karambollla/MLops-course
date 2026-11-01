@@ -1,7 +1,19 @@
 """Преобразование корпуса и реальная загрузка в Qdrant."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
 import argparse
+import json
+import math
 from pathlib import Path
+
+try:
+    from qdrant_client import QdrantClient, models
+except ModuleNotFoundError as exc:
+    if exc.name != "qdrant_client":
+        raise
+    QdrantClient = models = None
 
 
 def build_points(documents: list[dict]) -> list[dict]:
@@ -9,7 +21,11 @@ def build_points(documents: list[dict]) -> list[dict]:
 
 
 def index_documents(url: str, corpus_path: Path) -> None:
-    # SDK qdrant_client нужен только для реального подключения; импортируй его здесь.
+    if QdrantClient is None:
+        raise RuntimeError(
+            "Install Qdrant SDK: python -m pip install -r labs/qdrant/requirements.txt"
+        )
+    # TODO: используй QdrantClient и models для коллекции и точек корпуса.
     raise NotImplementedError("Создай коллекцию, выполни upsert и проверь повтор")
 
 

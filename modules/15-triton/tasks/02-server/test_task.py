@@ -7,6 +7,13 @@ import numpy as np
 import pytest
 from course_tasks import load_solution
 
+try:
+    import onnxruntime as ort
+except ModuleNotFoundError as exc:
+    if exc.name != "onnxruntime":
+        raise
+    ort = None
+
 s = load_solution(__file__)
 
 
@@ -37,13 +44,13 @@ def test_empty_and_oversized_batch_are_rejected():
     reason="Дополнительный Linux Triton runtime",
 )
 def test_live_server_and_model_are_both_ready():
+    assert ort is not None, (
+        "Install labs/triton/requirements.txt before enabling this probe"
+    )
     base = os.getenv("TRITON_URL", "http://127.0.0.1:8000")
     for path in ["/v2/health/ready", "/v2/models/housing/ready"]:
         with urlopen(base + path, timeout=5) as response:
             assert response.status == 200
-
-    # Optional runtime is required only for this explicitly enabled probe.
-    import onnxruntime as ort
 
     model_path = Path(
         os.getenv(

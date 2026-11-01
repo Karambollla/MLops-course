@@ -1,5 +1,11 @@
 """HTTP V2 запрос; реальный сервер требует совместимого стенда."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
+import json
+from urllib.request import Request, urlopen
+
 from course_tasks import load_task
 
 

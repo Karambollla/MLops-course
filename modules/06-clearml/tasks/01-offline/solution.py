@@ -1,8 +1,21 @@
 """Student ClearML integration. Importing does not require the SDK."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
 import argparse
+import json
 import os
 from pathlib import Path
+
+import housing.train
+
+try:
+    from clearml import Task
+except ModuleNotFoundError as exc:
+    if exc.name != "clearml":
+        raise
+    Task = None
 
 
 def train_and_log(task, data_path: Path, output_dir: Path, seed: int = 42):
@@ -17,8 +30,10 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
-    # Необязательный SDK нужен только для реального запуска, не для сбора тестов.
-    from clearml import Task
+    if Task is None:
+        raise RuntimeError(
+            "Install ClearML SDK: python -m pip install -r labs/clearml/requirements.txt"
+        )
 
     Task.set_offline(
         offline_mode=Task.running_locally()

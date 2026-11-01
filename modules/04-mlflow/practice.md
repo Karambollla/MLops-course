@@ -35,4 +35,4 @@ curl -I http://localhost:5001
 
 ## Завершение
 
-`docker compose -f labs/mlflow/compose.yaml down` сохраняет volume. Перед `down -v` экспортируй IDs, отчёт и нужные артефакты.
+`docker compose -f labs/mlflow/compose.yaml down` сохраняет volume. Удаление volume не требуется; перед его намеренным удалением сохрани идентификаторы запусков, release manifest и нужные артефакты.

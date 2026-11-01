@@ -1,6 +1,11 @@
 """Учебная заготовка. Контракт: README.md рядом с файлом."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
 from pathlib import Path
+
+import pandas as pd
 
 
 def describe_frame(frame) -> dict:

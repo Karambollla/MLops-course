@@ -2,40 +2,40 @@
 
 [Теория](../../README.md) · [Практика модуля](../../practice.md) · [Подсказки](../../hints.md)
 
-## С чего начать
+## Почему нужен отдельный запрос
 
-Реализуй `knn_request(vector, k, topic=None, dimension=4) -> dict`. Схема: size=k, query.knn.vector={vector, k}; при topic добавь filter.term.topic внутрь этого объекта. k — положительное целое; dimension должна совпадать, вектор конечный и ненулевой. Это shape OpenSearch с Lucene engine, не JSON Elasticsearch. Mapping лежит рядом; реальные запросы используй на том же корпусе и embeddings.
+Корпус остаётся прежним, но новый движок иначе описывает векторное поле и поиск. Нужно отделить предметные параметры — vector, k, topic — от wire-формата OpenSearch. Различия mapping и запросов разобраны в [схеме](../../README.md#mapping-и-путь-документа) и [двух kNN-запросах](../../README.md#два-разных-knn-запроса).
 
-Подготовь [основное окружение](../../../../SETUP.md). Все команды ниже выполняются из корня курса. Платформа задания: **cpu**. Функции и ожидаемые результаты описаны также в `test_task.py`; тесты используют небольшие фиксированные данные.
+Уже предоставлены `solution.py`, [mapping.json](mapping.json), корпус/queries из `labs/search/` и CPU Compose OpenSearch 2.19.1. Нужны [основное окружение](../../../../SETUP.md) и понимание ingest предыдущего задания. Готовый Elasticsearch JSON не является входом этой функции.
 
-## Исходное задание
+## Технический контракт
+
+Реализуй `knn_request(vector,k,topic=None,dimension=4) -> dict`. На верхнем уровне `size=k`, затем `query.knn.vector` содержит координаты в `vector` и число соседей в `k`. Здесь внешний vector — имя поля mapping. Если topic задан, внутри этого объекта добавляется `filter:{term:{topic:значение}}`. Не используй post_filter.
+
+k — положительное integer без bool; число координат равно dimension; вектор конечный и не нулевой. Неверный k, размерность, NaN/infinity и нулевой вектор вызывают ValueError до HTTP. Для новой embedding-модели dimension передаётся явно из её версии индекса, а не угадывается.
+
+Например, вход `[0,0,0,1]`, k=2, topic=security даёт size=2 и фильтр по точному keyword topic внутри knn-запроса. Отправка этого тела подготовленному серверу должна вернуть IDs `"7"`/`"8"` с topic=security. Формирование словаря и реальная отправка — разные шаги; unit-тест проверяет первый, opt-in probe — второй.
+
+## Подготовка стенда
 
 ```bash
 docker compose -f labs/search/elasticsearch.compose.yaml down
 docker compose -f labs/search/opensearch.compose.yaml up -d
-curl -sS -X PUT http://localhost:9200/course-docs -H 'Content-Type: application/json' --data-binary @labs/search/opensearch.mapping.json
+curl --fail http://127.0.0.1:9200
+curl --fail -X PUT http://127.0.0.1:9200/course-docs -H 'Content-Type: application/json' --data-binary @modules/14-elasticsearch-opensearch/tasks/02-opensearch/mapping.json
 ```
 
-Реализуй отдельный request shape для OpenSearch. Повтори тот же корпус, queries и k. Ошибки запуска сначала диагностируй по logs; для vm.max_map_count следуй инструкции своего Linux runtime.
+Команды выполняются из корня курса. Mapping выбирает Lucene HNSW, cosine и четыре координаты; именно этот engine поддерживает используемый фильтр. Если индекс уже существует, проверь схему до загрузки. Загрузи те же восемь документов со стабильными `_id`, проверь каждый bulk item и refresh. Можно повторно использовать подготовку NDJSON, но не переносить Elasticsearch kNN JSON.
+
+Если сервис не стартует, смотри `docker compose -f labs/search/opensearch.compose.yaml logs opensearch`; `vm.max_map_count` настраивается в Linux runtime. Диагностика ресурсов — в [теории](../../README.md#ресурсы-и-диагностика-стенда).
 
 ## Проверка
 
 ```bash
 make task TASK=14-elasticsearch-opensearch/02-opensearch
-```
-
-У этой задачи проверяются функции: запускай их тестами, отдельного CLI нет.
-
-До реализации функции ожидается `NotImplementedError`. Реализуй заготовку, сохраняя контракт функций из тестов. Офлайн-тест не подтверждает действия на внешнем стенде: проверки, требующие работающего сервиса, включаются явно через `MLOPS_RUN_INTEGRATION=1`.
-
-## Результат
-
-Функции должны проходить проверки положительных и отрицательных случаев. Для собственного эксперимента сохраняй исходные измерения в `work/`: они пригодятся для повторного сравнения. Отдельное письменное резюме не требуется. После работы останови стенд по инструкции practice.md.
-
-### Реальная проверка запроса на OpenSearch
-
-```bash
 MLOPS_RUN_INTEGRATION=1 OPENSEARCH_URL=http://127.0.0.1:9200 make task TASK=14-elasticsearch-opensearch/02-opensearch
 ```
 
-Probe отправляет результат твоей функции `knn_request` уже подготовленному OpenSearch. Ожидаемые инварианты общего корпуса: count=8, отфильтрованные kNN IDs 7/8 с topic=security, документ 7 в match по Vault. Это не замер производительности. Probe только читает; индекс и mapping подготовь отдельно. Без opt-in пропуск, при включении отсутствие URL, сервера или индекса — ошибка.
+CLI отсутствует; первая команда вызывает функцию тестами, незавершённая заготовка даёт NotImplementedError. Вторая отправляет результат твоей `knn_request` реальному OpenSearch. Probe ожидает count=8, IDs 7/8 с фильтром security и ID7 в match по Vault. Он только читает индекс; не готовит и не удаляет его. Без opt-in серверная проверка пропускается, при включении отсутствие URL/сервера/индекса — ошибка.
+
+Сохрани исходные выдачи с теми же queries и k для следующего сравнения. После работы выполни `docker compose -f labs/search/opensearch.compose.yaml down`; данные volume сохранятся. Письменный отчёт не требуется.

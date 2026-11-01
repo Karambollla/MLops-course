@@ -62,6 +62,8 @@
 
 - [ClearML first steps](https://clear.ml/docs/latest/docs/getting_started/main/) — Task, experiment management и remote execution.
 - [ClearML offline mode](https://clear.ml/docs/latest/docs/guides/set_offline/) — локальные сессии и их импорт; отличать от очереди.
+- [ClearML Task SDK](https://clear.ml/docs/latest/docs/references/sdk/task/) — справочник `init`, `connect`, `upload_artifact` и `close`; сверять назначение методов после самостоятельного примера в модуле.
+- [ClearML Agent](https://clear.ml/docs/latest/docs/clearml_agent/) — путь Task через очередь, подготовка среды и переопределение параметров; читать перед серверным руководством.
 - [ClearML Server](https://clear.ml/docs/latest/docs/deploying_clearml/clearml_server/) — компоненты server и требования к самостоятельному развёртыванию.
 
 ## 07. Kubernetes: выкладка и диагностика

@@ -1,8 +1,30 @@
 """Учебная заготовка. Контракт: README.md рядом с файлом."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
 import argparse
+import hashlib
+import json
 import os
+import platform
 from pathlib import Path
+
+import joblib
+import pandas as pd
+import sklearn
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import Ridge
+
+from course_tasks import load_task
+from housing.features import FEATURES, TARGET
+
+try:
+    import mlflow
+except ModuleNotFoundError as exc:
+    if exc.name != "mlflow":
+        raise
+    mlflow = None
 
 
 def select_candidate(runs: list[dict]) -> str:
@@ -11,7 +33,15 @@ def select_candidate(runs: list[dict]) -> str:
 
 
 def track_experiments(data: Path, output: Path, tracking_uri: str) -> list[dict]:
-    # TODO: lazy mlflow import, реальный train и logging.
+    """Train three configurations and record their actual results with the SDK."""
+    if mlflow is None:
+        raise RuntimeError(
+            "Install MLflow SDK: python -m pip install -r labs/mlflow/requirements.txt"
+        )
+    # TODO: set_tracking_uri / set_experiment выбирают сервер и группу запусков.
+    # Для каждой конфигурации: start_run, своё обучение, log_params,
+    # log_metrics и log_artifacts; значения берутся из настоящих результатов.
+    # Пример этих SDK-вызовов: ../../README.md, «Самостоятельный пример учёта».
     raise NotImplementedError("Залогируй три эксперимента")
 
 

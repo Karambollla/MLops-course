@@ -1,9 +1,28 @@
 """Учебная заготовка. Контракт: README.md рядом с файлом."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
 import argparse
+import hashlib
+import json
+import os
+import platform
+import tempfile
 from pathlib import Path
 
+import joblib
+import numpy as np
+import pandas as pd
+import sklearn
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import Ridge
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from course_tasks import load_task
+from housing.features import FEATURES, TARGET
 
 
 def build_pipeline(seed: int = 42) -> "Pipeline":

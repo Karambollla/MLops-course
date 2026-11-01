@@ -3,13 +3,17 @@
 Task starter сознательно падает NotImplementedError до реализации solution.py.
 """
 
+# ruff: noqa: F401
+# Контекст и timetable подготовлены для заданий об интервалах и восстановлении.
+
 import hashlib
 import json
 import subprocess
 from pathlib import Path
 
 import pendulum
-from airflow.sdk import dag, task
+from airflow.sdk import dag, get_current_context, task
+from airflow.timetables.interval import CronDataIntervalTimetable
 
 
 @dag(

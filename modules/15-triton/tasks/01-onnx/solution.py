@@ -1,9 +1,26 @@
 """Экспортируется собственный Pipeline; заготовка не содержит готовой модели."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
 import argparse
 from pathlib import Path
 
+import joblib
 import numpy as np
+import pandas as pd
+
+from housing.features import FEATURES
+
+try:
+    import onnx
+    import onnxruntime as ort
+    from skl2onnx import convert_sklearn
+    from skl2onnx.common.data_types import FloatTensorType
+except ModuleNotFoundError as exc:
+    if exc.name not in {"onnx", "onnxruntime", "skl2onnx"}:
+        raise
+    onnx = ort = convert_sklearn = FloatTensorType = None
 
 
 def feature_matrix(rows: list[dict], feature_order: list[str]) -> np.ndarray:
@@ -17,7 +34,14 @@ def parity(expected, observed, rtol=1e-4, atol=1e-5) -> dict:
 
 
 def export_bundle(bundle_path: Path, output_path: Path) -> None:
-    # skl2onnx/onnxruntime — необязательные SDK; импорт нужен при выполнении экспорта.
+    if any(
+        dependency is None
+        for dependency in (onnx, ort, convert_sklearn, FloatTensorType)
+    ):
+        raise RuntimeError(
+            "Install ONNX export dependencies: python -m pip install -r labs/triton/requirements.txt"
+        )
+    # TODO: используй convert_sklearn / FloatTensorType, onnx.checker и ort.
     raise NotImplementedError(
         "Экспортируй Pipeline и проверь 100 строк через ONNX Runtime"
     )

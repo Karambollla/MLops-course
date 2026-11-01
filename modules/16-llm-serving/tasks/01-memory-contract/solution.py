@@ -1,5 +1,10 @@
 """CPU-задание: оценки памяти и обработка протокола без фиктивного LLM runtime."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
+import json
+
 
 def weights_bytes(parameters: int, bytes_per_parameter: int = 2) -> int:
     raise NotImplementedError("Оцени размер весов и проверь вход")

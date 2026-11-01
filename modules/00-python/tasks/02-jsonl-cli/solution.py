@@ -1,7 +1,15 @@
 """Учебная заготовка. Контракт: README.md рядом с файлом."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
+import argparse
+import json
+import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
+
+from course_tasks import load_task
 
 
 def iter_records(stream: Iterable[str]) -> Iterator[dict]:

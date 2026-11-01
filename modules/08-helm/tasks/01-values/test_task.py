@@ -10,6 +10,13 @@ from pathlib import Path
 
 import pytest
 
+try:
+    import yaml
+except ModuleNotFoundError as exc:
+    if exc.name != "yaml":
+        raise
+    yaml = None
+
 pytestmark = pytest.mark.integration
 
 
@@ -45,9 +52,7 @@ def test_values_config_and_checksum():
             "Install Helm 3 and PyYAML, complete values/chart, then MLOPS_RUN_INTEGRATION=1; see README"
         )
     assert shutil.which("helm"), "Install Helm 3; see SETUP.md"
-    try:
-        import yaml
-    except ImportError:
+    if yaml is None:
         pytest.fail("Install PyYAML in the test environment to inspect rendered YAML")
     task = Path(__file__).parent
 

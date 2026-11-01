@@ -1,7 +1,11 @@
 """Разбор результатов собственной Ansible-практики."""
 
+# ruff: noqa: F401
+# Импорты подготовлены для самостоятельной реализации задания.
+
 import argparse
 import json
+import re
 from pathlib import Path
 
 

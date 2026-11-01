@@ -103,7 +103,7 @@ def test_main_closes_sdk_task_when_training_fails(tmp_path, monkeypatch):
     def fail(*args, **kwargs):
         raise RuntimeError("injected training failure")
 
-    monkeypatch.setitem(sys.modules, "clearml", SimpleNamespace(Task=SDKTask))
+    monkeypatch.setattr(solution, "Task", SDKTask)
     monkeypatch.setenv("CLEARML_OFFLINE_MODE", "1")
     monkeypatch.setattr(
         sys,
