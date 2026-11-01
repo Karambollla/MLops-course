@@ -18,26 +18,58 @@ docker info --format '{{.Architecture}} {{.MemTotal}}'
 
 На Mac с Apple Silicon ожидается `arm64`, на Intel — `x86_64`. Наличие Docker CLI не доказывает доступность daemon: серверная часть `docker version` тоже должна ответить. Открой Docker Desktop или запусти свой Docker runtime.
 
-Для основного проекта используй Python 3.12. Установи его через официальный установщик или существующий менеджер версий. Альтернатива с уже установленным `uv`:
+Для основного проекта используй Python 3.12 и создай **одно** окружение `.venv`. Выбери один из двух способов ниже: через стандартный Python или через `uv`. Если `.venv` уже создана и зависимости установлены, повторно создавать её не нужно — достаточно активировать командой `source .venv/bin/activate`.
 
-```bash
-uv python install 3.12
-uv venv --python 3.12 .venv
-source .venv/bin/activate
-uv pip install -r labs/housing/requirements.txt
-uv pip install --no-deps -e labs/housing
-```
+### Способ 1: стандартный Python
 
-Через стандартный Python:
+Установи Python 3.12 через официальный установщик или существующий менеджер версий, затем выполни:
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r labs/housing/requirements.txt
 python -m pip install --no-deps -e labs/housing
+```
+
+Если создание окружения завершилось ошибкой, не переходи к остальным командам: файл активации мог не появиться.
+
+### Способ 2: uv
+
+Если установлен `uv`, вместо команд выше выполни:
+
+```bash
+uv python install 3.12
+uv venv --python 3.12 --managed-python .venv
+source .venv/bin/activate
+uv pip install -r labs/housing/requirements.txt
+uv pip install --no-deps -e labs/housing
+```
+
+### Проверка окружения
+
+После выполнения **одного** из способов проверь установленное окружение:
+
+```bash
 make check
 make test
 ```
+
+Если `python3.12 -m venv .venv` завершилась ошибкой, каталог может остаться без `bin/activate`. Не выполняй остальные команды: в таком случае `make` может выбрать системный Python другой версии. `source` применяется к `.venv/bin/activate`; `.venv/bin/python3` — исполняемый файл Python, а не shell-скрипт.
+
+Для выяснения причины проверь, откуда запускается Python и где находится его базовая установка:
+
+```bash
+command -v python3.12
+python3.12 -c 'import sys; print(sys.executable); print(sys.base_prefix)'
+```
+
+Если установка Python повреждена или ссылается на временный каталог, установи Python 3.12 заново из [официального дистрибутива](https://www.python.org/downloads/) либо через [uv](https://docs.astral.sh/uv/getting-started/installation/). Перед повторным созданием можно сохранить незавершённое окружение командой ниже; если `.venv-incomplete` уже существует, выбери другое имя:
+
+```bash
+test ! -e .venv-incomplete && mv .venv .venv-incomplete
+```
+
+После этого повтори создание и активацию. Окружение зависит от базовой установки Python: её нужно сохранить, пока используется `.venv`.
 
 Для MLflow, DVC, ClearML, ONNX и Qdrant создавай отдельные окружения по инструкциям модулей. Не устанавливай Airflow и GPU serving в основное окружение: у них собственные ограничения зависимостей.
 
