@@ -25,3 +25,44 @@ def test_insufficient_and_nonfinite_measurements_do_not_form_a_benchmark():
         )
     with pytest.raises(ValueError):
         s.latency_summary([{"latency_ms": 10, "status": 200}], 0, min_requests=1)
+
+
+def test_default_minimum_request_count_boundary():
+    rows = [{"latency_ms": 0, "status": 200}] * 200
+    with pytest.raises(ValueError):
+        s.latency_summary(rows[:-1], 2)
+    assert s.latency_summary(rows, 2) == {
+        "p50_ms": 0,
+        "p95_ms": 0,
+        "throughput_rps": 100,
+        "error_ratio": 0,
+    }
+
+
+def test_linear_percentiles_and_http_error_boundary_use_all_rows():
+    rows = [
+        {"latency_ms": latency, "status": status}
+        for latency, status in [(100, 500), (0, 200), (20, 400), (10, 399)]
+    ]
+    result = s.latency_summary(rows, 2, min_requests=4)
+    assert result == pytest.approx(
+        {
+            "p50_ms": 15,
+            "p95_ms": 88,
+            "throughput_rps": 2,
+            "error_ratio": 0.5,
+        }
+    )
+    assert s.latency_summary(rows, 4, min_requests=4)["throughput_rps"] == 1
+
+
+@pytest.mark.parametrize("elapsed", [-1, float("nan"), float("inf")])
+def test_invalid_wall_time(elapsed):
+    with pytest.raises(ValueError):
+        s.latency_summary([{"latency_ms": 1, "status": 200}], elapsed, min_requests=1)
+
+
+@pytest.mark.parametrize("latency", [-1, float("inf"), -float("inf")])
+def test_invalid_latency(latency):
+    with pytest.raises(ValueError):
+        s.latency_summary([{"latency_ms": latency, "status": 200}], 1, min_requests=1)

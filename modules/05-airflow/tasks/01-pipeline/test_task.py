@@ -8,7 +8,8 @@ from course_tasks import load_solution
 s = load_solution(__file__)
 
 
-def test_training_uses_cli_and_metadata(tmp_path, monkeypatch):
+@pytest.mark.parametrize("seed", [42, 17, 901])
+def test_training_uses_cli_and_metadata(tmp_path, monkeypatch, seed):
     data = tmp_path / "input with spaces.csv"
     data.write_text("x\n1\n")
     out = tmp_path / "runs" / "key-1"
@@ -21,14 +22,19 @@ def test_training_uses_cli_and_metadata(tmp_path, monkeypatch):
         assert command[:3] == ["/opt/housing-venv/bin/python", "-m", "housing.train"]
         assert command[command.index("--data") + 1] == str(data)
         assert command[command.index("--output") + 1] == str(out)
-        assert command[command.index("--seed") + 1] == "42"
+        assert len(command) == 9
+        assert dict(zip(command[3::2], command[4::2])) == {
+            "--data": str(data),
+            "--output": str(out),
+            "--seed": str(seed),
+        }
         out.mkdir(parents=True, exist_ok=True)
         for name in ["model.joblib", "metrics.json", "manifest.json", "split.json"]:
             (out / name).write_text("{}")
         return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    assert s.run_training(data, out) == {"path": str(out), "run_key": "key-1"}
+    assert s.run_training(data, out, seed) == {"path": str(out), "run_key": "key-1"}
     assert len(calls) == 1
 
 
@@ -42,3 +48,27 @@ def test_failed_training_propagates(tmp_path, monkeypatch):
     monkeypatch.setattr(subprocess, "run", failure)
     with pytest.raises(subprocess.CalledProcessError):
         s.run_training(data, tmp_path / "out")
+
+
+@pytest.mark.parametrize(
+    "missing", ["model.joblib", "metrics.json", "manifest.json", "split.json"]
+)
+def test_successful_process_requires_every_artifact(tmp_path, monkeypatch, missing):
+    output = tmp_path / "runs" / "key"
+
+    def incomplete(command, **kwargs):
+        output.mkdir(parents=True)
+        for name in ["model.joblib", "metrics.json", "manifest.json", "split.json"]:
+            if name != missing:
+                (output / name).write_text("{}")
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(subprocess, "run", incomplete)
+    try:
+        s.run_training(tmp_path / "data.csv", output, 17)
+    except NotImplementedError:
+        raise
+    except (FileNotFoundError, ValueError, RuntimeError):
+        pass
+    else:
+        pytest.fail(f"Successful process did not produce required {missing}")

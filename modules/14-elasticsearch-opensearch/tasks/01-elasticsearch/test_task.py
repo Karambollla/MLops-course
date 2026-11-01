@@ -87,3 +87,37 @@ def test_live_index_and_search_return_original_security_documents():
     assert all(hit["_source"]["topic"] == "security" for hit in hits)
     lexical = read("/_search", {"query": {"match": {"text": "Vault"}}})
     assert "7" in {hit["_id"] for hit in lexical["hits"]["hits"]}
+
+
+def test_bulk_multiple_unicode_documents_keep_action_source_pairs():
+    docs = [
+        {"id": 42, "text": "Привет\nмир 🔑", "topic": "安全", "vector": [1, 2]},
+        {"id": 0, "text": "Second", "topic": "release", "vector": [3, 4]},
+    ]
+    output = s.build_bulk(docs, "unicode-docs")
+    assert output.endswith("\n")
+    lines = output.splitlines()
+    assert len(lines) == 4
+    parsed = [json.loads(line) for line in lines]
+    for position, doc in enumerate(docs):
+        assert parsed[2 * position] == {
+            "index": {"_index": "unicode-docs", "_id": str(doc["id"])}
+        }
+        assert parsed[2 * position + 1] == {
+            key: doc[key] for key in ("text", "topic", "vector")
+        }
+    assert [
+        json.loads(line) for line in s.build_bulk(docs, "unicode-docs").splitlines()
+    ] == parsed
+
+
+def test_bulk_failure_items_override_top_level_flag_and_include_all_failures():
+    items = [
+        {"index": {"_id": "a", "status": 299}},
+        {"index": {"_id": "b", "status": 300}},
+        {"index": {"_id": "c", "status": 201, "error": {"type": "rejected"}}},
+        {"index": {"_id": "d", "status": 503}},
+    ]
+    assert s.bulk_failures({"errors": False, "items": items}) == ["b", "c", "d"]
+    assert s.bulk_failures({"errors": True, "items": [items[0]]}) == []
+    assert s.bulk_failures({"errors": True, "items": []}) == []

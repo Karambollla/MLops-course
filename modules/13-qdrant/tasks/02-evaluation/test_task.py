@@ -36,3 +36,18 @@ def test_duplicates_do_not_inflate_relevance_and_cutoff_is_respected():
 def test_invalid_cutoff(k):
     with pytest.raises(ValueError):
         s.ranking_metrics([1], [1], k)
+
+
+@pytest.mark.parametrize(
+    "retrieved,relevant,k,expected",
+    [
+        ([2, 1], [1, 2], 2, (1, 1, 1)),
+        ([8, 9], [1, 2], 2, (0, 0, 0)),
+        ([9, 8, 1], [1], 2, (0, 0, 0)),
+        ([1], [1, 2], 4, (0.5, 0.25, 1)),
+        ([9, 1], [1, 1, 2, 2], 3, (0.5, 1 / 3, 0.5)),
+    ],
+)
+def test_ranking_boundaries_and_unique_qrels(retrieved, relevant, k, expected):
+    result = s.ranking_metrics(retrieved, relevant, k)
+    assert result == dict(zip(["recall", "precision", "mrr"], expected))

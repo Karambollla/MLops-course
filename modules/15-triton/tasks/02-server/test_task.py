@@ -80,3 +80,30 @@ def test_live_server_and_model_are_both_ready():
         result = np.asarray(actual["data"]).reshape(actual["shape"])
         assert np.isfinite(result).all()
         np.testing.assert_allclose(result, values, rtol=1e-4, atol=1e-5)
+
+
+@pytest.mark.parametrize("count,max_batch", [(1, 32), (32, 32), (3, 3), (33, 40)])
+def test_batch_limits_and_row_major_feature_order(count, max_batch):
+    rows = [{"b": index + 0.5, "a": index} for index in range(count)]
+    result = s.inference_request(rows, ["a", "b"], max_batch=max_batch)
+    assert result == {
+        "inputs": [
+            {
+                "name": "features",
+                "datatype": "FP32",
+                "shape": [count, 2],
+                "data": [
+                    value
+                    for index in range(count)
+                    for value in (float(index), index + 0.5)
+                ],
+            }
+        ]
+    }
+
+
+def test_custom_batch_limit_and_invalid_features_are_not_hidden():
+    with pytest.raises(ValueError):
+        s.inference_request([{"a": 1}] * 4, ["a"], max_batch=3)
+    with pytest.raises(ValueError):
+        s.inference_request([{"a": 1}, {"a": True}], ["a"])

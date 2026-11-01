@@ -120,3 +120,35 @@ def test_main_closes_sdk_task_when_training_fails(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="injected training failure"):
         solution.main()
     assert events == [("offline", True), ("closed", True)]
+
+
+def test_main_closes_sdk_task_after_success(tmp_path, monkeypatch):
+    events = []
+    task = SimpleNamespace(close=lambda: events.append("closed"))
+
+    class SDKTask:
+        running_locally = staticmethod(lambda: True)
+        set_offline = staticmethod(lambda offline_mode: None)
+        init = staticmethod(lambda **kwargs: task)
+
+    data, output = tmp_path / "data.csv", tmp_path / "bundle"
+
+    def trained(actual_task, actual_data, actual_output, seed):
+        assert (actual_task, actual_data, actual_output, seed) == (
+            task,
+            data,
+            output,
+            17,
+        )
+        events.append("trained")
+        return "training-result"
+
+    monkeypatch.setattr(solution, "Task", SDKTask)
+    monkeypatch.setattr(solution, "train_and_log", trained)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["solution.py", "--data", str(data), "--output", str(output), "--seed", "17"],
+    )
+    assert solution.main() == "training-result"
+    assert events == ["trained", "closed"]

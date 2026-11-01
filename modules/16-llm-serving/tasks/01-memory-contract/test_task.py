@@ -41,3 +41,26 @@ def test_kv_cache_rejects_invalid_dimensions(position, invalid):
     args[position] = invalid
     with pytest.raises(ValueError):
         s.kv_cache_bytes(*args)
+
+
+@pytest.mark.parametrize("invalid", [0, -1, True, 1.5])
+def test_weight_bytes_per_parameter_is_validated(invalid):
+    with pytest.raises(ValueError):
+        s.weights_bytes(10, invalid)
+
+
+def test_weights_respect_nondefault_bytes_per_parameter():
+    assert s.weights_bytes(17, 1) == 17
+    assert s.weights_bytes(17, 4) == 68
+
+
+def test_sse_returns_all_nonempty_choices_in_event_order():
+    lines = [
+        'data: {"choices":[{"delta":{"content":""}},{"delta":{"content":"two words"}}]}',
+        ": heartbeat",
+        'data: {"choices":[{"delta":{"content":" A"}},{"delta":{"role":"assistant"}},{"delta":{"content":" B"}}]}',
+        "data: [DONE]",
+        'data: {"error":{"message":"ignored after done"}}',
+    ]
+    assert s.sse_contents(lines) == ["two words", " A", " B"]
+    assert s.sse_contents(["", ": heartbeat", "data: [DONE]"]) == []

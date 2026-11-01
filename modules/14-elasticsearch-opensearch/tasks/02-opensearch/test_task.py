@@ -58,3 +58,29 @@ def test_live_index_and_search_return_original_security_documents():
     assert all(hit["_source"]["topic"] == "security" for hit in hits)
     lexical = read("/_search", {"query": {"match": {"text": "Vault"}}})
     assert "7" in {hit["_id"] for hit in lexical["hits"]["hits"]}
+
+
+@pytest.mark.parametrize("topic", [None, "security"])
+def test_custom_embedding_dimension_and_topic_presence(topic):
+    result = s.knn_request([0.5, -1], 7, topic=topic, dimension=2)
+    expected = {"vector": [0.5, -1], "k": 7}
+    if topic is not None:
+        expected["filter"] = {"term": {"topic": topic}}
+    assert result == {"size": 7, "query": {"knn": {"vector": expected}}}
+
+
+@pytest.mark.parametrize(
+    "vector,k,dimension",
+    [
+        ([], 1, 4),
+        ([1, float("inf")], 1, 2),
+        ([1, -float("inf")], 1, 2),
+        ([1, 2], 1, 3),
+        ([0, 0], 1, 2),
+        ([1, 2], -1, 2),
+        ([1, 2], 1.5, 2),
+    ],
+)
+def test_documented_bad_custom_queries(vector, k, dimension):
+    with pytest.raises(ValueError):
+        s.knn_request(vector, k, dimension=dimension)
