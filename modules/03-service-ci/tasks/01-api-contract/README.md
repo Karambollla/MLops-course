@@ -4,7 +4,7 @@
 
 ## Где работать и контракт
 
-Редактируй `modules/03-service-ci/tasks/01-api-contract/solution.py` (физическая заготовка рядом). Дополнительные свои тесты и `report.md` размещай в этой же папке. Полных решений в заготовке нет.
+Редактируй `modules/03-service-ci/tasks/01-api-contract/solution.py` (физическая заготовка рядом). Дополнительные тесты размещай в этой же папке. Полных решений в заготовке нет.
 
 `check_prediction_response(payload: dict, expected, model_version: str) -> None` проверяет ровно ключи predictions/model_version/target_unit, размер batch, конечные прогнозы и allclose с rtol=1e-6, atol=1e-8; единица "100000 USD"; нарушение — ValueError. `exercise_api(client, pipeline, batch, model_version: str) -> None`: client — FastAPI TestClient уже в lifespan, batch — DataFrame FEATURES; сравни HTTP /predict и Pipeline, переставь JSON-ключи, проверь пустой/257 batch, missing/extra поля, строки/bool вместо чисел и NaN/Infinity → 422. При отсутствии модели проверь live=200, ready/predict=503 отдельным тестом. Физически добавь свои интеграционные тесты в эту папку, используя shared housing.api; код API уже предоставлен, не создавай второй сервер. Несовместимый bundle должен сорвать startup.
 
@@ -39,6 +39,10 @@ uvicorn housing.api:app --host 127.0.0.1 --port 8000
 
 ## Приёмка и очистка
 
-Пройди все тесты `test_task.py`, сохрани перечисленные артефакты и добавь объяснение решений/ограничений в `report.md`. Для инфраструктурных опытов приложи реальные команды и вывод: offline проверки не доказывают развёртывание, доступность удалённого сервера или качество объяснения. Ручная оценка: воспроизводимость шагов, соответствие исходному контракту, объяснение причины сбоя и корректное восстановление.
+Выполни `test_task.py`: проверяются результаты функций, ошибки входа и изменения технических артефактов. Письменный пересказ выполнения не требуется.
 
 После опыта останови стенд: `docker compose -f labs/housing/compose.yaml down`. Uvicorn останови Ctrl+C. Не удаляй volume без экспорта истории; артефакты `work/` сохрани для следующих модулей.
+
+## Пример корректного результата
+
+Без модели GET /live → 200, GET /ready и валидный POST /predict → 503. С совместимым bundle ready/predict → 200; пустой batch → 422. Порядок JSON-ключей не меняет прогноз; несовместимый bundle не проходит startup.

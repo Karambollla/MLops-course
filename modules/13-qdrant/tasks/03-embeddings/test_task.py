@@ -27,6 +27,7 @@ def test_invalid_embedding_output_is_not_indexed(vectors):
         s.make_manifest("model", "a" * 40, vectors, b"corpus")
 
 
-def test_mutable_revision_is_not_reproducible():
+@pytest.mark.parametrize("revision", ["main", "latest"])
+def test_mutable_revision_is_not_reproducible(revision):
     with pytest.raises(ValueError):
-        s.make_manifest("model", "main", [[1.0]], b"corpus")
+        s.make_manifest("model", revision, [[1.0]], b"corpus")

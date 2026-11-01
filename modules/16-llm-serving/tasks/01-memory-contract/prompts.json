@@ -1,82 +1,82 @@
 [
   {
     "id": 1,
-    "text": null
+    "text": "Explain model rollback in one sentence."
   },
   {
     "id": 2,
-    "text": null
+    "text": "Name two checks before a model release."
   },
   {
     "id": 3,
-    "text": null
+    "text": "What is training serving skew?"
   },
   {
     "id": 4,
-    "text": null
+    "text": "Explain why a random split can leak information in time series."
   },
   {
     "id": 5,
-    "text": null
+    "text": "Compare readiness and liveness probes for a model API."
   },
   {
     "id": 6,
-    "text": null
+    "text": "How can a repeated task safely publish the same model?"
   },
   {
     "id": 7,
-    "text": null
+    "text": "What should be recorded with an ONNX export?"
   },
   {
     "id": 8,
-    "text": null
+    "text": "Describe a plan for measuring p95 inference latency."
   },
   {
     "id": 9,
-    "text": null
+    "text": "Explain how delayed labels affect monitoring MAE."
   },
   {
     "id": 10,
-    "text": null
+    "text": "Compare keyword and vector search for an exact error code."
   },
   {
     "id": 11,
-    "text": null
+    "text": "What happens when a secret is stored in an experiment artifact?"
   },
   {
     "id": 12,
-    "text": null
+    "text": "How do you compare two serving engines fairly?"
   },
   {
     "id": 13,
-    "text": null
+    "text": "Summarize the role of a data hash in reproducibility."
   },
   {
     "id": 14,
-    "text": null
+    "text": "Explain the difference between model weight memory and KV cache memory."
   },
   {
     "id": 15,
-    "text": null
+    "text": "Describe a failure scenario where HTTP 200 from a bulk API hides errors."
   },
   {
     "id": 16,
-    "text": null
+    "text": "A service has normal CPU usage but rising p95 latency. Describe useful observations before choosing a fix."
   },
   {
     "id": 17,
-    "text": null
+    "text": "A new model improves test MAE but fails on recent traffic. Discuss data split, feature distribution and delayed labels."
   },
   {
     "id": 18,
-    "text": null
+    "text": "A workflow publishes successfully but the orchestrator marks the task failed. Explain how the retry should decide whether publication already occurred."
   },
   {
     "id": 19,
-    "text": null
+    "text": "Compare a local educational ML deployment with a production service. Discuss ownership, load, availability and limits of claims made from a laptop experiment."
   },
   {
     "id": 20,
-    "text": null
+    "text": "Design a reproducible search comparison on one corpus and fixed relevance labels. Include versions, query inputs, filters, latency measurement, and a reason not to combine raw scores directly."
   }
 ]

@@ -1,38 +1,20 @@
-# Terraform: обнаружение drift
+# Обнаружение drift
 
-Зависит от 11/01; используй его state и каталог конфигурации, не создавай второй одноимённый контейнер.
+Все три задачи используют **один** каталог `modules/11-terraform/tasks/01-repeat` и его существующий state. Не применяй labs/terraform параллельно с тем же именем контейнера. Terraform 1.11.4/provider 3.0.2 закреплены в main.tf. Docker endpoint узнай через `docker context inspect --format '{{.Endpoints.docker.Host}}'` и задай `TF_VAR_docker_host`.
 
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов. Та же версия Terraform/provider и Docker endpoint, что 11/01.
-
-Сохрани container ID из state/docker inspect. Вручную разрешено удалить **только mlops-course-terraform**. Повтори terraform plan в каталоге 11/01, сохрани JSON plan, не меняй конфигурацию. Должен появиться create ресурса docker_container.web. Примени просмотренный plan, проверь новый container ID/HTTP200 и следующий no-op plan. В report.json отдели изменение реальности от изменения конфигурации. Не удаляй volume/чужие контейнеры.
-
-Проверка выбранного задания:
+После задания 01 вручную удали только учебный контейнер:
 
 ```bash
-make task TASK=11-terraform/02-drift
-python scripts/run_task.py run 11-terraform/02-drift -- --report modules/11-terraform/tasks/02-drift/report.json
+docker rm -f mlops-course-terraform
+terraform -chdir=modules/11-terraform/tasks/01-repeat plan -detailed-exitcode
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Ожидается create для docker_container.web и код 2, означающий найденное изменение. Запусти live-тест **до восстановления**. Конфигурацию и state не редактируй ради имитации drift. Затем вручную просмотри plan и выполни apply; HTTP снова 200, следующий plan без изменений. Тест читает настоящий plan и не восстанавливает контейнер.
 
-## Контракт и проверка
+```bash
+MLOPS_RUN_INTEGRATION=1 MLOPS_TERRAFORM_DIR="$PWD/modules/11-terraform/tasks/01-repeat" make task TASK=11-terraform/02-drift
+```
 
-Grader требует container_name=mlops-course-terraform, deleted_container_id=before_id != restored_id, непустые IDs, configuration_changed=false, drift_plan для docker_container.web actions=[create], after_plan только no-op и HTTP200. Результат {"detected": True, "restored": True}.
+Рабочий каталог задаётся явно; нет CLI/provider/state — тест падает с подсказкой. Проверки не выполняют init/apply/destroy и не выводят plan/state. Завершив все три задачи, вручную выполни `terraform -chdir=modules/11-terraform/tasks/01-repeat destroy`, затем удали saved plan; state и plan не коммить.
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
-
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
-
-## Завершение
-
-Из каталога 11/01 выполни destroy после задания state; не удаляй state вручную ради имитации drift.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Команды запускай из корня курса после [SETUP](../../../../SETUP.md). Python-тесты проверяют функции на фиксированных входах; они не подтверждают запуск стенда. Live-проверки включаются только `MLOPS_RUN_INTEGRATION=1`, читают существующий стенд и не создают/не удаляют ресурсы. При включённом флаге недоступные зависимости — ошибка с подсказкой.

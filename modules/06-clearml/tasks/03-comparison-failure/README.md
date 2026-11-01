@@ -1,38 +1,37 @@
 # ClearML: сравнение и отказ
 
-Сравни один реальный эксперимент в MLflow (порт 5001) и ClearML; зависимость 04 и 06/01, для server — 06/02.
-
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов.
-
-Сопоставь параметры, metrics, artifacts, lineage, способ повтора и эксплуатационные затраты MLflow/ClearML/Airflow. Offline: введи исключение в обучение и подтверди finally/сохранение сессии. Agent: останови своего agent после получения задачи, запиши состояние и восстановление/повтор; объясни риск дублирования и run_key. Вручную оцени минимум два аргумента сопровождения, а не рекламный список возможностей.
-
-Проверка выбранного задания:
+Нужны завершённые 04-mlflow и 06-clearml/01-offline; agent-ветка использует 02-agent.
+Сравни один CSV/hash, seed, split и pipeline в MLflow и ClearML. Проверяй реальные
+metrics/artifacts в UI: MAE/RMSE должны совпасть в пределах погрешности повторного
+обучения. Сопоставь tracking (MLflow/ClearML), schedule (Airflow), execution (agent).
+Обдумай стоимость сопровождения и доступность данных; письменная таблица не нужна.
 
 ```bash
-make task TASK=06-clearml/03-comparison-failure
-python scripts/run_task.py run 06-clearml/03-comparison-failure -- --report modules/06-clearml/tasks/03-comparison-failure/report.json
+curl --fail --max-time 10 http://127.0.0.1:5001/health
+CLEARML_OFFLINE_MODE=1 python modules/06-clearml/tasks/01-offline/solution.py --data work/housing.csv --output modules/06-clearml/tasks/03-comparison-failure/output --seed 42
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Иллюстрация: health возвращает успешный статус; ClearML пишет путь session;
+в обеих системах совпадают seed/hash и содержимое model/manifest.
 
-## Контракт и проверка
+Для offline отказа временно введи `raise RuntimeError("injected training failure")`
+в свою функцию обучения перед публикацией модели; запусти ту же CLI с новым output.
 
-`validate_report(report) -> {"level": "offline"|"agent", "detection_seconds": number}`. Сравни одинаковые параметры/артефакты/hash и MAE с допуском 1e-8; потребуй обе run IDs и maintenance_tradeoffs (две различные причины). failure: injected_at <= observed_at < recovered_at; offline требует session_saved=true, queue_tested=false; agent требует queue_tested=true, task_state_before/after и agent_id. ownership разделяет tracking, schedule и execution как в fixture.
+```bash
+CLEARML_OFFLINE_MODE=1 python modules/06-clearml/tasks/01-offline/solution.py --data work/housing.csv --output modules/06-clearml/tasks/03-comparison-failure/failed-output --seed 42
+echo $?
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
+Ожидается ненулевой exit и исключение injected training failure; `finally` закрывает
+Task, SDK сохраняет offline-сессию. Не публикуй частичную модель как готовую.
+Убери инъекцию и повтори с новым output: exit 0, настоящие metrics/artifacts.
+Если проверяешь agent: отправь отдельный клон задачи, дождись in_progress,
+останови своего agent Ctrl+C, посмотри статус в UI, затем возобнови или повтори
+задачу. Состояние после отказа зависит от таймаутов и версии; не выдавай ожидаемый
+статус за измеренный. Проверяй разные Task IDs и риск дубликатов/run_key.
+Автоматическая аттестация этих переходов не предлагается.
 
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
-
-## Завершение
-
-Останови agent и локальный server после сохранения отчёта. Восстанови обычный train без искусственного исключения.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Все команды — из корня репозитория после [SETUP](../../../../SETUP.md).
+Выводы ниже иллюстрируют инварианты; это не запись успешного выполнения.
+Отчёт, JSON-подтверждение и письменное описание не требуются.
+[Теория](../../README.md) · [Подсказки](../../hints.md)

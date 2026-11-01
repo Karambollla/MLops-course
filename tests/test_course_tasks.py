@@ -128,3 +128,49 @@ def test_runner_rejects_a_missing_id_instead_of_running_everything(course):
     result = invoke(course, "test")
     assert result.returncode == 2
     assert "TASK" in result.stderr or "задани" in result.stderr
+
+
+def add_guide(course):
+    folder = course / "modules/00-demo/tasks/03-guide"
+    folder.mkdir()
+    (folder / "README.md").write_text("# Рекомендации\n")
+    path = course / "modules/tasks.json"
+    catalog = json.loads(path.read_text())
+    catalog["tasks"].append(
+        {
+            "id": "00-demo/03-guide",
+            "title": "Пример",
+            "kind": "guide",
+            "starter": "README.md",
+            "tests": None,
+            "entrypoint": None,
+        }
+    )
+    path.write_text(json.dumps(catalog))
+    return folder
+
+
+def test_runner_shows_guide_instead_of_running_fake_tests(course):
+    folder = add_guide(course)
+    result = invoke(course, "test", "00-demo/03-guide")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert str(folder / "README.md") in result.stdout
+    assert "проверок нет" in result.stdout
+    assert "passed" not in result.stdout
+
+
+def test_runner_all_excludes_guides(course):
+    add_guide(course)
+    for slug in ["01-first", "02-second"]:
+        path = course / "modules/00-demo/tasks" / slug / "test_task.py"
+        path.write_text("def test_behavior():\n    assert 2 + 2 == 4\n")
+    result = invoke(course, "test", "--all", "--", "-q")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "2 passed" in result.stdout
+
+
+def test_runner_run_guide_points_to_material(course):
+    folder = add_guide(course)
+    result = invoke(course, "run", "00-demo/03-guide")
+    assert result.returncode == 0, result.stderr
+    assert str(folder / "README.md") in result.stdout

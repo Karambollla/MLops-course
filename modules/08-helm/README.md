@@ -17,7 +17,7 @@ Chart — пакет шаблонов и метаданных. Values — пар
 `helm lint` находит часть ошибок chart. `helm template` показывает итоговый YAML без подключения к кластеру. Они не доказывают, что image существует, модель загружается или запрос проходит. Для этого нужны rollout и smoke-test.
 
 ```bash
-helm template demo labs/helm/housing --set image.tag=v1
+helm template demo modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml
 ```
 
 Проверь число реплик, image, model path и probes в результате. Для строк, которые могут интерпретироваться YAML как число или boolean, используй осознанное quoting. Слишком много вложенных шаблонов ухудшает чтение: для небольшого chart простые ресурсы легче отлаживать.

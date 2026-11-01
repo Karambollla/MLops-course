@@ -1,4 +1,6 @@
 import json
+import os
+from urllib.request import Request, urlopen
 
 import pytest
 from course_tasks import load_solution
@@ -48,3 +50,40 @@ def test_duplicate_ids_and_empty_index_are_rejected():
         s.build_bulk(DOCS + DOCS, "course-docs")
     with pytest.raises(ValueError):
         s.build_bulk(DOCS, "")
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    os.getenv("MLOPS_RUN_INTEGRATION") != "1",
+    reason="Нужен уже загруженный поисковый индекс course-docs",
+)
+def test_live_index_and_search_return_original_security_documents():
+    base = os.environ["ELASTICSEARCH_URL"].rstrip("/")
+
+    def read(path, body=None):
+        request = Request(
+            base + "/course-docs" + path,
+            data=None if body is None else json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        with urlopen(request, timeout=5) as response:
+            return json.load(response)
+
+    assert read("/_count")["count"] == 8
+    result = read(
+        "/_search",
+        {
+            "knn": {
+                "field": "vector",
+                "query_vector": [0, 0, 0, 1],
+                "k": 2,
+                "num_candidates": 8,
+            },
+            "size": 2,
+        },
+    )
+    hits = result["hits"]["hits"]
+    assert {hit["_id"] for hit in hits} == {"7", "8"}
+    assert all(hit["_source"]["topic"] == "security" for hit in hits)
+    lexical = read("/_search", {"query": {"match": {"text": "Vault"}}})
+    assert "7" in {hit["_id"] for hit in lexical["hits"]["hits"]}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List, test, or run one task. Student tests are intentionally RED initially."""
+"""List technical exercises and guides, or run explicit task checks."""
 
 from __future__ import annotations
 
@@ -25,9 +25,13 @@ def main() -> int:
         "run", help="Запустить Python-заготовку выбранного задания"
     )
     run.add_argument("task")
-    args, extra = parser.parse_known_args()
-    if extra[:1] == ["--"]:
-        extra = extra[1:]
+    arguments = sys.argv[1:]
+    if "--" in arguments:
+        separator = arguments.index("--")
+        args = parser.parse_args(arguments[:separator])
+        extra = arguments[separator + 1 :]
+    else:
+        args, extra = parser.parse_known_args(arguments)
     try:
         root = course_root()
         catalog = task_catalog()
@@ -35,7 +39,14 @@ def main() -> int:
             if extra:
                 parser.error("У list нет дополнительных аргументов")
             for task in catalog:
-                print(f"{task['id']}  {task['title']}")
+                kind = (
+                    "руководство"
+                    if task.get("kind") == "guide"
+                    else "стенд"
+                    if task.get("kind") == "integration"
+                    else "код"
+                )
+                print(f"{task['id']}  [{kind}] {task['title']}")
             return 0
         if args.command == "test":
             if args.all and args.task:
@@ -51,6 +62,19 @@ def main() -> int:
                 task_directory(
                     args.task
                 )  # Produce the same clear validation error as the loader.
+            if not args.all and selected[0].get("kind") == "guide":
+                print(
+                    f"Руководство с примерами; автоматических проверок нет: {task_directory(args.task) / 'README.md'}"
+                )
+                return 0
+            selected = [
+                task
+                for task in selected
+                if task.get("tests", "test_task.py") is not None
+            ]
+            if not selected:
+                print("Автоматических проверок нет; открой README материалов.")
+                return 0
             paths = [
                 str(task_directory(task["id"]) / task.get("tests", "test_task.py"))
                 for task in selected
@@ -66,15 +90,14 @@ def main() -> int:
                 *extra,
             ]
             result = subprocess.run(command, cwd=root)
-            if result.returncode == 0 and any(
-                task.get("kind") in {"written", "evidence"} for task in selected
-            ):
-                print(
-                    "Проверена структура результата. Выполни также содержательную проверку по рубрике README задания."
-                )
             return result.returncode
         directory = task_directory(args.task)
         task = next(task for task in catalog if task["id"] == args.task)
+        if task.get("kind") == "guide":
+            print(
+                f"Руководство с примерами; автоматических проверок нет: {directory / 'README.md'}"
+            )
+            return 0
         entrypoint = task.get("entrypoint", task.get("starter", "solution.py"))
         if entrypoint is None:
             parser.error(
@@ -84,7 +107,7 @@ def main() -> int:
         entry = (directory / entrypoint).resolve()
         if not entry.is_relative_to(directory) or entry.suffix != ".py":
             parser.error(
-                "У этого задания заготовка конфигурации/отчёта. Открой его README для команды запуска."
+                "У этого задания заготовка конфигурации. Открой его README для команды запуска."
             )
         if not entry.is_file():
             raise FileNotFoundError(f"Нет Python-заготовки: {entry}")

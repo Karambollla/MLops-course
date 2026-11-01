@@ -1,54 +1,45 @@
-"""Офлайн-контракты; синтетические fixtures не являются доказательством запуска."""
-
 import json
-from pathlib import Path
+import os
+from urllib.request import urlopen
 
 import pytest
-from course_tasks import load_solution
 
-solution = load_solution(__file__)
-grading = load_solution(__file__, filename="grading.py")
-
-
-def sample():
-    return json.loads(Path(__file__).with_name("scenario.json").read_text())
-
-
-def test_valid_observations():
-    assert grading.validate_report(sample()) == {
-        "detection_seconds": 45,
-        "recovery_seconds": 20,
-    }
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        os.getenv("MLOPS_RUN_INTEGRATION") != "1",
+        reason="Set MLOPS_RUN_INTEGRATION=1 for the running Prometheus lab",
+    ),
+]
 
 
-def test_reject_inconsistent_0():
-    report = sample()
-    report["firing_at"] = 120
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
+def get(path):
+    address = os.getenv("PROMETHEUS_URL", "http://127.0.0.1:9090")
+    try:
+        with urlopen(address.rstrip("/") + path, timeout=5) as response:
+            return json.load(response)
+    except Exception:
+        pytest.fail(
+            "Prometheus request failed: start labs/monitoring and check PROMETHEUS_URL",
+            pytrace=False,
+        )
 
 
-def test_reject_inconsistent_1():
-    report = sample()
-    report["states"] = ["inactive", "pending"]
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_reject_inconsistent_2():
-    report = sample()
-    report["no_model"]["up"] = 0
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_reject_inconsistent_3():
-    report = sample()
-    report["resolved_at"] = 150
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_own_observations_are_complete_and_consistent():
-    report = json.loads(Path(__file__).with_name("report.json").read_text())
-    grading.validate_report(report)
+def test_current_target_and_alert_rules():
+    data = get("/api/v1/query?query=up%7Bjob%3D%22housing%22%7D")
+    assert data.get("status") == "success"
+    values = data["data"]["result"]
+    assert values, "No housing target: check Prometheus scrape config and /targets"
+    expected = os.getenv("MLOPS_EXPECT_UP", "1")
+    assert expected in {"0", "1"}, "MLOPS_EXPECT_UP must be 0 or 1"
+    assert all(row["value"][1] == expected for row in values), (
+        "Target differs from MLOPS_EXPECT_UP; inspect /targets"
+    )
+    rules = get("/api/v1/rules")["data"]["groups"]
+    alerts = [r for g in rules for r in g["rules"] if r.get("type") == "alerting"]
+    assert any(r["name"] == "HousingTargetDown" for r in alerts), (
+        "Load HousingTargetDown into the running Prometheus"
+    )
+    assert any(r["name"] != "HousingTargetDown" for r in alerts), (
+        "Load your model-readiness or predict-5xx alert"
+    )

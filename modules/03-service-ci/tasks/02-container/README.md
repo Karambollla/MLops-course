@@ -1,46 +1,63 @@
-# Образ
+# Образ и работающий контейнер
 
-[Практика модуля](../../practice.md) · [Теория](../../README.md) · [Подсказки](../../hints.md) · [SETUP](../../../../SETUP.md)
+[Практика модуля](../../practice.md) · [Теория](../../README.md) · [SETUP](../../../../SETUP.md)
 
-## Где работать и контракт
+## Что выполнить
 
-Основной starter: `modules/03-service-ci/tasks/02-container/evidence.json`. Заполни его реальными Docker/HTTP результатами. Используй общие `labs/housing/Dockerfile`, `.dockerignore` и `compose.yaml`; инфраструктуру курса не копируй. При необходимости автоматизируй сбор в физическом `solution.py`: `collect_evidence(container_id: str, base_url: str, request_path: Path) -> dict`; функция делает только read-only inspect/HTTP и возвращает схему evidence.json. Сборщик необязателен, свидетельства можно заполнить вручную.
+Используй `labs/housing/Dockerfile`, `.dockerignore` и Compose. Подготовь собственную модель и перенеси её готовым export.py задания кандидата в `work/artifacts/`. Решение API уже предоставлено; здесь проверяется его работа в контейнере, а не JSON с описанием результата.
 
-Схема: user — эффективный пользователь образа; model_read_only — mount модели readonly; embedded_paths — найденные в образе CSV/веса/секреты/venv (ожидается []); ready_status; predictions_count для request.json; image_id с sha256:; dependency_versions с python; image_size_bytes. Добавь without_model_ready_status=503, without_model_predict_status=503, without_model_live_status=200 и model_removed_only_in_temporary_copy=true по отдельному опыту. Не выдумывай значения: приложи команды и вывод в report.md. Проверка JSON не доказывает фактический состав image, это проверяется вручную по Dockerfile/context/inspect.
-
-## Среда и зависимости
-
-Базовая среда из SETUP: Python, pytest; CPU, Linux/macOS.
-
-Зависит от 03-service-ci/01-api-contract. Нужен Docker Desktop/Compose для ручной проверки. Останови Uvicorn (порт 8000), выполни compose config/up из практики, curl ready/predict; сохрани image ID, размер и зависимости. Шаблон evidence.json — ввод для audit_container; fixture не является результатом реального Docker.
-
-## Запуск и результат
-
-Из корня репозитория:
-
-```bash
-make task TASK=03-service-ci/02-container
-```
-
-До заполнения evidence.json ожидается RED на незаполненных значениях; сборщик solution.py отдельно содержит NotImplementedError. После реализации все offline-тесты должны быть зелёными. Они создают временные данные через pytest tmp_path; полный housing автоматически не скачивается.
-
-CLI solution.py не требуется. Для opt-in проверки уже поднятого API: `MLOPS_RUN_INTEGRATION=1 make task TASK=03-service-ci/02-container`. Она выполняет только GET readiness.
-
-## Требования практического опыта
-
-Останови локальный Uvicorn предыдущего задания через Ctrl+C: Compose использует тот же host port 8000.
+Останови локальный Uvicorn, если он занимает порт 8000. Из корня:
 
 ```bash
 docker compose -f labs/housing/compose.yaml config --quiet
 docker compose -f labs/housing/compose.yaml up -d --build
-curl -i http://localhost:8000/ready
-curl -sS http://localhost:8000/predict -H 'Content-Type: application/json' --data-binary @labs/housing/request.json
+MLOPS_CONTAINER_ID=$(docker compose -f labs/housing/compose.yaml ps -q api) \
+  MLOPS_RUN_INTEGRATION=1 make task TASK=03-service-ci/02-container
 ```
 
-При готовой модели ожидаются 200 и один prediction. Сохрани image ID, версии зависимостей и размер образа. Удали модель только в отдельной временной копии и проверь ожидаемый 503 после перезапуска.
+Тесты читают настоящий docker inspect/image inspect, проверяют UID через `id -u`, read-only mount и HTTP-ответы. Они не запускают, не меняют и не удаляют контейнеры. Если API доступен по другому адресу, задай `MLOPS_HOUSING_URL`. Без флага интеграционные тесты пропускаются: это не подтверждение выполнения задания.
 
-## Приёмка и очистка
+## Ожидаемое поведение
 
-Пройди все тесты `test_task.py`, сохрани перечисленные артефакты и добавь объяснение решений/ограничений в `report.md`. Для инфраструктурных опытов приложи реальные команды и вывод: offline проверки не доказывают развёртывание, доступность удалённого сервера или качество объяснения. Ручная оценка: воспроизводимость шагов, соответствие исходному контракту, объяснение причины сбоя и корректное восстановление.
+```text
+GET /live              → 200
+GET /ready             → 200
+POST /predict          → 200, один конечный прогноз для request.json
+POST /predict, []      → 422
+id -u                  → ненулевой UID
+mount /models          → RW=false
+```
 
-После опыта останови стенд: `docker compose -f labs/housing/compose.yaml down`. Uvicorn останови Ctrl+C. Не удаляй volume без экспорта истории; артефакты `work/` сохрани для следующих модулей.
+Число и версия модели берутся из твоего bundle; фиксированный пример прогноза не требуется. Состав контекста проверь по Dockerfile и .dockerignore: CSV, секреты и локальная venv не должны копироваться в образ приложения.
+
+## Проверка отсутствующей модели
+
+Используй отдельный стенд с пустой папкой моделей. Не удаляй собственную модель. Можно создать временную Compose-надстройку в work:
+
+```bash
+mkdir -p work/empty-models
+cat > work/housing-empty.compose.yaml <<'YAML'
+services:
+  api:
+    volumes:
+      - ../../work/empty-models:/models:ro
+YAML
+```
+
+Путь в надстройке задан относительно первого Compose-файла, labs/housing/compose.yaml. Останови основной стенд и запусти отдельный проект:
+
+```bash
+docker compose -f labs/housing/compose.yaml down
+docker compose -p housing-empty -f labs/housing/compose.yaml -f work/housing-empty.compose.yaml up -d
+MLOPS_CONTAINER_ID=$(docker compose -p housing-empty -f labs/housing/compose.yaml -f work/housing-empty.compose.yaml ps -q api) \
+  MLOPS_MODEL_STATE=absent MLOPS_RUN_INTEGRATION=1 make task TASK=03-service-ci/02-container
+```
+
+Теперь ожидаются `/live` → 200, `/ready` и валидный `/predict` → 503; неверный запрос по-прежнему даёт 422. Ошибка импорта или падение контейнера не является ожидаемым результатом отсутствующей модели.
+
+## Остановка
+
+```bash
+docker compose -p housing-empty -f labs/housing/compose.yaml -f work/housing-empty.compose.yaml down
+docker compose -f labs/housing/compose.yaml down
+```

@@ -23,3 +23,16 @@ def test_recap_parses_counts_and_second_run_is_idempotent():
 def test_bad_or_non_idempotent_repeat_is_not_accepted(text):
     with pytest.raises(ValueError):
         s.compare_runs(FIRST, text)
+
+
+@pytest.mark.parametrize(
+    "first,second",
+    [
+        (FIRST.replace("failed=0", "failed=1"), SECOND),
+        (FIRST, SECOND.replace("node :", "other :")),
+        (FIRST, SECOND.replace("unreachable=0", "unreachable=1")),
+    ],
+)
+def test_errors_and_different_hosts_are_rejected(first, second):
+    with pytest.raises(ValueError):
+        s.compare_runs(first, second)

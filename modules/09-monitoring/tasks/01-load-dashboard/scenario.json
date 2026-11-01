@@ -19,14 +19,5 @@
       },
       "p95_seconds": 0.1
     }
-  ],
-  "target": "api:8000",
-  "datasource": "http://prometheus:9090",
-  "route": "/predict",
-  "panels": [
-    "rps",
-    "error_ratio",
-    "latency_p95"
-  ],
-  "scrape_up": 1
+  ]
 }

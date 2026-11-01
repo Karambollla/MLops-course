@@ -1,47 +1,30 @@
-"""Офлайн-контракты; синтетические fixtures не являются доказательством запуска."""
-
-import json
-from pathlib import Path
+"""Read the explicitly prepared model-less deployment and direct Pod HTTP."""
 
 import pytest
-from course_tasks import load_solution
 
-solution = load_solution(__file__)
-grading = load_solution(__file__, filename="grading.py")
+pytestmark = pytest.mark.integration
 
 
-def sample():
-    return json.loads(Path(__file__).with_name("scenario.json").read_text())
-
-
-def test_valid_observations():
-    assert grading.validate_report(sample()) == {
-        "diagnosis": "model_not_ready",
-        "service_routes_traffic": False,
-    }
-
-
-def test_reject_inconsistent_0():
-    report = sample()
-    report["ready"] = True
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_reject_inconsistent_1():
-    report = sample()
-    report["service_ready_endpoints"] = 1
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_reject_inconsistent_2():
-    report = sample()
-    report["readiness_path"] = "/live"
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_own_observations_are_complete_and_consistent():
-    report = json.loads(Path(__file__).with_name("report.json").read_text())
-    grading.validate_report(report)
+def test_model_missing_is_alive_but_not_routable(kube, http):
+    deployment = kube("deployment", "housing")
+    container = deployment["spec"]["template"]["spec"]["containers"][0]
+    assert container["image"] == "housing:course"
+    assert container["livenessProbe"]["httpGet"]["path"] == "/live"
+    assert container["readinessProbe"]["httpGet"]["path"] == "/ready"
+    pods = kube("pods", "-l", "app=housing")["items"]
+    assert pods, "Prepare the model-less deployment first"
+    assert all(p["status"]["phase"] == "Running" for p in pods)
+    assert all(p["status"].get("containerStatuses") for p in pods)
+    assert all(
+        not c["ready"] for p in pods for c in p["status"].get("containerStatuses", [])
+    )
+    service = kube("service", "housing")
+    assert service["spec"]["selector"] == {"app": "housing"}
+    slices = kube("endpointslices", "-l", "kubernetes.io/service-name=housing")["items"]
+    assert not any(
+        e.get("conditions", {}).get("ready", True)
+        for s in slices
+        for e in s.get("endpoints", [])
+    )
+    assert http("/live")[0] == 200
+    assert http("/ready")[0] == 503

@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 import pytest
 from course_tasks import load_solution
 
@@ -37,8 +34,10 @@ def test_sse_ignores_metadata_and_stops_at_done():
         s.sse_contents(["data: {broken"])
 
 
-def test_own_prompt_corpus_is_ready_for_a_reproducible_benchmark():
-    prompts = json.loads(Path(__file__).with_name("prompts.json").read_text())
-    assert len(prompts) >= 20, "Заполни20 prompts разных длин в prompts.json"
-    assert len({p["id"] for p in prompts}) == len(prompts)
-    assert all(isinstance(p["text"], str) and p["text"].strip() for p in prompts)
+@pytest.mark.parametrize("position", range(6))
+@pytest.mark.parametrize("invalid", [0, -1, True, 1.5])
+def test_kv_cache_rejects_invalid_dimensions(position, invalid):
+    args = [24, 8, 64, 2048, 1, 2]
+    args[position] = invalid
+    with pytest.raises(ValueError):
+        s.kv_cache_bytes(*args)

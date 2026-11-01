@@ -1,6 +1,9 @@
+import json
 import os
-from urllib.request import urlopen
+from pathlib import Path
+from urllib.request import Request, urlopen
 
+import numpy as np
 import pytest
 from course_tasks import load_solution
 
@@ -28,6 +31,7 @@ def test_empty_and_oversized_batch_are_rejected():
         s.inference_request([{"a": 1}] * 33, ["a"])
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(
     os.getenv("MLOPS_RUN_INTEGRATION") != "1",
     reason="Дополнительный Linux Triton runtime",
@@ -37,3 +41,35 @@ def test_live_server_and_model_are_both_ready():
     for path in ["/v2/health/ready", "/v2/models/housing/ready"]:
         with urlopen(base + path, timeout=5) as response:
             assert response.status == 200
+
+    # Optional runtime is required only for this explicitly enabled probe.
+    import onnxruntime as ort
+
+    model_path = Path(
+        os.getenv(
+            "TRITON_ONNX_PATH", "work/triton/model_repository/housing/1/model.onnx"
+        )
+    )
+    session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+    features = np.array([[8.3, 41, 6.9, 1.0, 322, 2.5, 37.8, -122.2]], dtype=np.float32)
+    expected = session.run(None, {"features": features})
+    body = s.inference_request(
+        [dict(zip(["a", "b", "c", "d", "e", "f", "g", "h"], features[0].tolist()))],
+        ["a", "b", "c", "d", "e", "f", "g", "h"],
+    )
+    request = Request(
+        base + "/v2/models/housing/infer",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    with urlopen(request, timeout=10) as response:
+        observed = json.load(response)["outputs"]
+    assert {row["name"] for row in observed} == {
+        out.name for out in session.get_outputs()
+    }
+    by_name = {row["name"]: row for row in observed}
+    for output, values in zip(session.get_outputs(), expected):
+        actual = by_name[output.name]
+        result = np.asarray(actual["data"]).reshape(actual["shape"])
+        assert np.isfinite(result).all()
+        np.testing.assert_allclose(result, values, rtol=1e-4, atol=1e-5)

@@ -4,13 +4,13 @@
 
 ## Задания
 
-Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+Технические задания проверяются тестами функций или работающего стенда. Руководства содержат команды и примеры ожидаемого поведения без обязательной письменной сдачи.
 
-| Задание | Основной файл | Платформа |
+| Тема | Файлы и проверка | Платформа |
 |---|---|---|
-| [Нагрузка и dashboard](tasks/01-load-dashboard/README.md) | [Заготовка](tasks/01-load-dashboard/solution.py) · [тесты](tasks/01-load-dashboard/test_task.py) | cpu |
-| [Отказ](tasks/02-outage/README.md) | [Заготовка](tasks/02-outage/report.json) · [тесты](tasks/02-outage/test_task.py) | cpu |
-| [Качество и drift](tasks/03-quality-drift/README.md) | [Заготовка](tasks/03-quality-drift/solution.py) · [тесты](tasks/03-quality-drift/test_task.py) | cpu |
+| [Нагрузка и dashboard](tasks/01-load-dashboard/README.md) | [Старт](tasks/01-load-dashboard/solution.py) · [Тесты функций](tasks/01-load-dashboard/test_task.py) | cpu |
+| [Отказ](tasks/02-outage/README.md) | [Старт](tasks/02-outage/rules.yaml) · [Проверка стенда](tasks/02-outage/test_task.py) | cpu |
+| [Качество и drift](tasks/03-quality-drift/README.md) | [Старт](tasks/03-quality-drift/solution.py) · [Тесты функций](tasks/03-quality-drift/test_task.py) | cpu |
 
 ## Как запускать
 
@@ -20,7 +20,7 @@
 make task TASK=09-monitoring/01-load-dashboard
 ```
 
-Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
+Подставь идентификатор выбранной темы из README. Незавершённые функции дают ошибки тестов; проверки стенда без включения пропускаются, а для руководств runner показывает путь к материалу. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Функции проверяются прямо на фиксированных входах. Live-проверки читают существующий стенд только с MLOPS_RUN_INTEGRATION=1; guides не требуют отдельной сдачи.
 
 ## Подготовка
 
@@ -34,4 +34,4 @@ Prometheus: 9090; Grafana: 3000, локальный вход student / local-cou
 
 ## Завершение
 
-`docker compose -f labs/monitoring/compose.yaml down`. Перед удалением volume выгрузи свой dashboard JSON и отчёт.
+`docker compose -f labs/monitoring/compose.yaml down`. Перед удалением volume выгрузи свой dashboard JSON.

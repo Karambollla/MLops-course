@@ -4,13 +4,13 @@
 
 ## Задания
 
-Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+Технические задания проверяются тестами функций или работающего стенда. Руководства содержат команды и примеры ожидаемого поведения без обязательной письменной сдачи.
 
-| Задание | Основной файл | Платформа |
+| Тема | Файлы и проверка | Платформа |
 |---|---|---|
-| [Повтор](tasks/01-repeat/README.md) | [Заготовка](tasks/01-repeat/report.json) · [тесты](tasks/01-repeat/test_task.py) | cpu |
-| [Drift](tasks/02-drift/README.md) | [Заготовка](tasks/02-drift/report.json) · [тесты](tasks/02-drift/test_task.py) | cpu |
-| [State](tasks/03-state/README.md) | [Заготовка](tasks/03-state/report.json) · [тесты](tasks/03-state/test_task.py) | cpu |
+| [Повтор](tasks/01-repeat/README.md) | [Старт](tasks/01-repeat/main.tf) · [Проверка стенда](tasks/01-repeat/test_task.py) | cpu |
+| [Drift](tasks/02-drift/README.md) | [Старт](tasks/02-drift/README.md) · [Проверка стенда](tasks/02-drift/test_task.py) | cpu |
+| [State](tasks/03-state/README.md) | [Старт](tasks/03-state/README.md) · [Проверка стенда](tasks/03-state/test_task.py) | cpu |
 
 ## Как запускать
 
@@ -20,7 +20,7 @@
 make task TASK=11-terraform/01-repeat
 ```
 
-Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
+Подставь идентификатор выбранной темы из README. Незавершённые функции дают ошибки тестов; проверки стенда без включения пропускаются, а для руководств runner показывает путь к материалу. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Функции проверяются прямо на фиксированных входах. Live-проверки читают существующий стенд только с MLOPS_RUN_INTEGRATION=1; guides не требуют отдельной сдачи.
 
 ## Подготовка
 
@@ -33,14 +33,14 @@ docker context inspect --format '{{.Endpoints.docker.Host}}'
 Передай найденное значение через `TF_VAR_docker_host` в своём терминале, без подмены системных переменных.
 
 ```bash
-terraform -chdir=labs/terraform init
-terraform -chdir=labs/terraform fmt -check
-terraform -chdir=labs/terraform validate
-terraform -chdir=labs/terraform plan -out=course.tfplan
-terraform -chdir=labs/terraform apply course.tfplan
+terraform -chdir=modules/11-terraform/tasks/01-repeat init
+terraform -chdir=modules/11-terraform/tasks/01-repeat fmt -check
+terraform -chdir=modules/11-terraform/tasks/01-repeat validate
+terraform -chdir=modules/11-terraform/tasks/01-repeat plan -out=course.tfplan
+terraform -chdir=modules/11-terraform/tasks/01-repeat apply course.tfplan
 curl -I http://127.0.0.1:8099
 ```
 
 ## Завершение
 
-Из той же конфигурации и с тем же Docker endpoint выполни `terraform -chdir=labs/terraform destroy`. Проверь удаление только учебного контейнера. Удали `course.tfplan`, если он больше не нужен; state не добавляй в Git.
+Из той же конфигурации и с тем же Docker endpoint выполни `terraform -chdir=modules/11-terraform/tasks/01-repeat destroy`. Проверь удаление только учебного контейнера. Удали `course.tfplan`, если он больше не нужен; state не добавляй в Git.

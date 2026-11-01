@@ -1,38 +1,52 @@
 # Helm: values и конфигурация
 
-Зависит от загруженного housing:v1 и удаления ручного Deployment/Service 07. Рендер не заменяет smoke-test.
-
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов. Дополнительно Helm 3, kubectl, kind. Chart скопирован как исходный baseline, учебные дополнения ещё отсутствуют.
-
-В task-local chart/ добавь ConfigMap и checksum содержимого ConfigMap в Pod template. Заполни values-dev.yaml: одна реплика, явные ресурсы, обычная настройка без secret. `helm lint modules/08-helm/tasks/01-values/chart`; `helm template housing-demo modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml`. Сохрани рендер до/после и небольшой diff. Установи через helm --kube-context kind-mlops-course upgrade --install с --wait --timeout 120s. Проверь release status и predict через service/housing-demo. Покажи, что checksum реально меняется при изменении настройки.
-
-Проверка выбранного задания:
+Нужен Helm 3 и PyYAML (`python -m pip install PyYAML` в тестовой среде).
+Редактируй **task-local** chart/ и values-dev.yaml рядом с этим README;
+`labs/helm/housing` не используется в этом задании. Это исходный baseline:
+добавь ConfigMap из `.Values.config`, подключи его к контейнеру через envFrom,
+добавь SHA256 `checksum/config` в spec.template.metadata.annotations.
+Заполни values-dev.yaml: одна реплика, image.tag=v1, непустая обычная config,
+явные requests/limits с положительными значениями request <= limit.
+Реализация шаблонов остаётся задачей учащегося.
 
 ```bash
-make task TASK=08-helm/01-values
-python scripts/run_task.py run 08-helm/01-values -- --report modules/08-helm/tasks/01-values/report.json
+helm lint modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml
+helm template housing-demo modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml
+MLOPS_RUN_INTEGRATION=1 python -m pytest modules/08-helm/tasks/01-values/test_task.py -q
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Иллюстрация рендера: Service housing-demo выбирает labels Pod, Deployment с
+replicas: 1, image: housing:v1, MODEL_PATH=/models/model.joblib, /live и /ready;
+ConfigMap содержит твою обычную настройку, Pod использует envFrom.
+Checksum — 64 hex символа и меняется при изменении значения существующего config key.
+Тест рендерит два варианта через реальные helm template и временный override;
+он не меняет chart/values и не подключается к Kubernetes.
+После реализации ожидается 1 passed; без флага 1 skipped. С флагом отсутствие
+Helm/PyYAML или незавершённые шаблоны дают failure, а не skip.
 
-## Контракт и проверка
+Для реальной установки нужны Docker/kind/kubectl, image housing:v1 с собственным
+bundle из 07/02, загруженный в kind. Удали ручные ресурсы Kubernetes 07 перед Helm.
 
-`validate_report(report) -> {"rollout_required": True, "service_name": str}`. Имена service/release совпадают; housing:v1, replicas=1, 0<request<=limit<=1024. Непустые config_before/after различаются; sha256 checksums (64 hex) различаются и находятся в spec.template.metadata.annotations. render_changed_fields содержит оба пути fixture; готовность, HTTP200 и совпадение непустых model IDs обязательны.
+```bash
+export MLOPS_KUBE_CONTEXT=kind-mlops-course
+export MLOPS_KUBE_NAMESPACE=default
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" upgrade --install housing-demo modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml --wait --timeout 120s
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" status housing-demo
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" port-forward service/housing-demo 8000:8000
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
+В другом терминале:
 
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
+```bash
+curl --fail --max-time 10 http://127.0.0.1:8000/ready
+curl --fail --max-time 10 -H 'Content-Type: application/json' --data @labs/housing/request.json http://127.0.0.1:8000/predict
+```
 
-## Завершение
+Иллюстрация: STATUS deployed, HTTP200, model_version совпадает с собственным
+bundle v1. Рендер сам по себе не доказывает доступность image/модели/API.
+Измени обычный config в values-dev.yaml и повтори upgrade: checksum в Pod template
+меняется, создаётся новая ревизия Pod. Сохрани release для 02, останови port-forward.
 
-Сохрани release для следующего упражнения, останови port-forward; после блока `helm --kube-context kind-mlops-course uninstall housing-demo`.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Все команды — из корня репозитория после [SETUP](../../../../SETUP.md).
+Выводы иллюстрируют инварианты, а не успешный прогон. Отчёт не требуется.
+[Теория](../../README.md) · [Подсказки](../../hints.md)

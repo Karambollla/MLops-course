@@ -1,17 +1,39 @@
-import json
+import hashlib
+import os
 from pathlib import Path
 
+import pytest
 
-def test_three_real_runs_are_consistent_with_change_notifications():
-    report = json.loads(Path(__file__).with_name("report.json").read_text())
-    runs = report["runs"]
-    assert len(runs) == 3, "Запиши три запуска в report.json"
-    assert [r["workers"] for r in runs] == [1, 2, 2]
-    assert all(r["failed"] == 0 and r["unreachable"] == 0 for r in runs)
-    assert runs[1]["changed"] > 0 and runs[1]["handlers"], (
-        "Изменение шаблона должно вызвать handler"
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        os.getenv("MLOPS_RUN_INTEGRATION") != "1",
+        reason="Set MLOPS_RUN_INTEGRATION=1 after manually running the task playbook",
+    ),
+]
+
+
+def test_generated_config_and_handler_marker():
+    directory = (
+        Path(__file__).resolve().parents[4] / "work" / "ansible-template" / "config"
     )
-    assert runs[2]["changed"] == 0 and runs[2]["handlers"] == []
-    assert runs[1]["config_sha256"] == runs[2]["config_sha256"]
-    assert runs[0]["config_sha256"] != runs[1]["config_sha256"]
-    assert report["invalid_workers_rejected"] is True
+    config = directory / "housing.env"
+    marker = directory / "housing.env.sha256"
+    assert config.is_file(), (
+        "Run task-local controller; template destination must be /course-output/config/housing.env"
+    )
+    assert marker.is_file(), (
+        "Handler must write config SHA256 to /course-output/config/housing.env.sha256"
+    )
+    settings = dict(
+        line.split("=", 1)
+        for line in config.read_text().splitlines()
+        if line and not line.startswith("#")
+    )
+    assert settings.get("MODEL_PATH") == "/models/model.joblib"
+    assert settings.get("WORKERS") == "2", (
+        "Complete workers=1, workers=2, workers=2 runs before checking"
+    )
+    assert (
+        marker.read_text().strip() == hashlib.sha256(config.read_bytes()).hexdigest()
+    ), "Handler marker must match actual config digest"

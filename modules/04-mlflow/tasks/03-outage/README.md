@@ -4,15 +4,15 @@
 
 ## Где работать и контракт
 
-Редактируй `modules/04-mlflow/tasks/03-outage/solution.py` (физическая заготовка рядом). Дополнительные свои тесты и `report.md` размещай в этой же папке. Полных решений в заготовке нет.
+Редактируй `modules/04-mlflow/tasks/03-outage/solution.py` (физическая заготовка рядом). Дополнительные тесты размещай в этой же папке. Полных решений в заготовке нет.
 
-`recover_registration(pending: dict, register, local_path: Path) -> dict`: pending содержит run_key, run_id, artifact_uri, status="pending" и champion_version. callback register(pending) возвращает конкретный version (строка); вызывай только для pending. При ConnectionError атомарно сохрани исходную связь и status=pending в local_path, верни {status:"pending", run_id, run_key, artifact_uri, champion_version}; не продвигай champion. После восстановления сохрани status=registered и version с теми же исходными идентификаторами; уже registered повторно не вызывает callback и не меняет результат. Прочие ошибки не скрывай. Реальный опыт: останови MLflow, попробуй регистрацию, зафиксируй ошибку/локальную политику, подними сервер и восстанови регистрацию того же run. Выбор policy и пределы идемпотентности внешнего реестра объясни в report.md: offline callback не доказывает exactly-once при падении после remote side effect.
+`recover_registration(pending: dict, register, local_path: Path) -> dict`: pending содержит run_key, run_id, artifact_uri, status="pending" и champion_version. callback register(pending) возвращает конкретный version (строка); вызывай только для pending. При ConnectionError атомарно сохрани исходную связь и status=pending в local_path, верни {status:"pending", run_id, run_key, artifact_uri, champion_version}; не продвигай champion. После восстановления сохрани status=registered и version с теми же исходными идентификаторами; уже registered повторно не вызывает callback и не меняет результат. Прочие ошибки не скрывай. Реальный опыт: останови MLflow, попробуй регистрацию, зафиксируй ошибку/локальную политику, подними сервер и восстанови регистрацию того же run. Проверь сохранённое состояние и отсутствие повторного продвижения champion. Offline callback не доказывает exactly-once при падении после remote side effect.
 
 ## Среда и зависимости
 
 Базовая среда из SETUP: Python, pytest; CPU, Linux/macOS.
 
-Зависит от 04-mlflow/02-registry. Реальный outage выполняй на учебном Compose, не удаляя volume. Ручная приёмка: исходный run и bundle доступны после восстановления, champion не поменялся из-за ошибки.
+Зависит от 04-mlflow/02-registry. Реальный outage выполняй на учебном Compose, не удаляя volume. Ожидаемое поведение на стенде: исходный run и bundle доступны после восстановления, champion не поменялся из-за ошибки.
 
 ## Запуск и результат
 
@@ -32,6 +32,10 @@ make task TASK=04-mlflow/03-outage
 
 ## Приёмка и очистка
 
-Пройди все тесты `test_task.py`, сохрани перечисленные артефакты и добавь объяснение решений/ограничений в `report.md`. Для инфраструктурных опытов приложи реальные команды и вывод: offline проверки не доказывают развёртывание, доступность удалённого сервера или качество объяснения. Ручная оценка: воспроизводимость шагов, соответствие исходному контракту, объяснение причины сбоя и корректное восстановление.
+Выполни `test_task.py`: проверяются результаты функций, ошибки входа и изменения технических артефактов. Письменный пересказ выполнения не требуется.
 
 После опыта останови стенд: `docker compose -f labs/mlflow/compose.yaml down`. Uvicorn останови Ctrl+C. Не удаляй volume без экспорта истории; артефакты `work/` сохрани для следующих модулей.
+
+## Пример корректного результата
+
+При ConnectionError состояние остаётся pending, исходный run_id сохраняется, champion не продвигается. Успешный повтор меняет status на registered и сохраняет точную version. Повтор уже registered не вызывает регистрацию снова.

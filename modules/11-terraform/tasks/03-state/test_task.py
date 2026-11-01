@@ -1,54 +1,82 @@
-"""Офлайн-контракты; синтетические fixtures не являются доказательством запуска."""
-
 import json
+import os
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
-from course_tasks import load_solution
 
-solution = load_solution(__file__)
-grading = load_solution(__file__, filename="grading.py")
-
-
-def sample():
-    return json.loads(Path(__file__).with_name("scenario.json").read_text())
-
-
-def test_valid_observations():
-    assert grading.validate_report(sample()) == {
-        "bindings_consistent": True,
-        "team_backend_ready": True,
-    }
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        os.getenv("MLOPS_RUN_INTEGRATION") != "1",
+        reason="Set MLOPS_RUN_INTEGRATION=1 for an existing Terraform lab",
+    ),
+]
 
 
-def test_reject_inconsistent_0():
-    report = sample()
-    report["observed_container_id"] = "other"
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
+def workdir():
+    value = os.getenv("MLOPS_TERRAFORM_DIR")
+    assert value, (
+        "Set MLOPS_TERRAFORM_DIR to the existing initialized 11-terraform/01-repeat working directory"
+    )
+    p = Path(value).expanduser().resolve()
+    assert (
+        p.is_dir() and (p / "main.tf").is_file() and (p / "terraform.tfstate").is_file()
+    ), (
+        "Expected existing main.tf and local terraform.tfstate; initialize/apply the task manually first"
+    )
+    assert shutil.which("terraform"), "Install Terraform 1.11.4 and add it to PATH"
+    return p
 
 
-def test_reject_inconsistent_1():
-    report = sample()
-    report["sensitive_encrypts_state"] = True
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
+def terraform(directory, *args, codes=(0,)):
+    try:
+        result = subprocess.run(
+            ["terraform", f"-chdir={directory}", *args],
+            capture_output=True,
+            text=True,
+            timeout=90,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        pytest.fail(
+            "Terraform could not run; check CLI, provider and Docker endpoint",
+            pytrace=False,
+        )
+    if result.returncode not in codes:
+        pytest.fail(
+            "Terraform command failed; inspect diagnostics locally (state/plan may contain secrets). Check init, TF_VAR_docker_host and Docker.",
+            pytrace=False,
+        )
+    return result
 
 
-def test_reject_inconsistent_2():
-    report = sample()
-    report["team_backend"]["locking"] = False
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_reject_inconsistent_3():
-    report = sample()
-    report["roles"]["lock_file"] = "resource_bindings"
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_own_observations_are_complete_and_consistent():
-    report = json.loads(Path(__file__).with_name("report.json").read_text())
-    grading.validate_report(report)
+def test_state_matches_existing_container():
+    directory = workdir()
+    data = json.loads(terraform(directory, "show", "-json").stdout)
+    resources = data.get("values", {}).get("root_module", {}).get("resources", [])
+    found = {r["address"]: r for r in resources}
+    assert {"docker_image.web", "docker_container.web"} <= found.keys(), (
+        "Apply the task manually before checking state"
+    )
+    identifier = found["docker_container.web"]["values"]["id"]
+    assert shutil.which("docker"), (
+        "Install Docker CLI and start the task Docker endpoint"
+    )
+    try:
+        result = subprocess.run(
+            ["docker", "inspect", "--format", "{{.Id}}", "mlops-course-terraform"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        pytest.fail("Docker inspect failed; check Docker endpoint", pytrace=False)
+    if result.returncode != 0:
+        pytest.fail(
+            "Docker inspect failed; check Docker context matches TF_VAR_docker_host",
+            pytrace=False,
+        )
+    assert identifier == result.stdout.strip(), (
+        "State binding differs from actual container ID"
+    )

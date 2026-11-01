@@ -1,44 +1,77 @@
-"""Офлайн-контракты; синтетические fixtures не являются доказательством запуска."""
-
 import json
+import os
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
-from course_tasks import load_solution
 
-solution = load_solution(__file__)
-grading = load_solution(__file__, filename="grading.py")
-
-
-def sample():
-    return json.loads(Path(__file__).with_name("scenario.json").read_text())
-
-
-def test_valid_observations():
-    assert grading.validate_report(sample()) == {"detected": True, "restored": True}
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        os.getenv("MLOPS_RUN_INTEGRATION") != "1",
+        reason="Set MLOPS_RUN_INTEGRATION=1 for an existing Terraform lab",
+    ),
+]
 
 
-def test_reject_inconsistent_0():
-    report = sample()
-    report["restored_id"] = report["before_id"]
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
+def workdir():
+    value = os.getenv("MLOPS_TERRAFORM_DIR")
+    assert value, (
+        "Set MLOPS_TERRAFORM_DIR to the existing initialized 11-terraform/01-repeat working directory"
+    )
+    p = Path(value).expanduser().resolve()
+    assert (
+        p.is_dir() and (p / "main.tf").is_file() and (p / "terraform.tfstate").is_file()
+    ), (
+        "Expected existing main.tf and local terraform.tfstate; initialize/apply the task manually first"
+    )
+    assert shutil.which("terraform"), "Install Terraform 1.11.4 and add it to PATH"
+    return p
 
 
-def test_reject_inconsistent_1():
-    report = sample()
-    report["configuration_changed"] = True
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
+def terraform(directory, *args, codes=(0,)):
+    try:
+        result = subprocess.run(
+            ["terraform", f"-chdir={directory}", *args],
+            capture_output=True,
+            text=True,
+            timeout=90,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        pytest.fail(
+            "Terraform could not run; check CLI, provider and Docker endpoint",
+            pytrace=False,
+        )
+    if result.returncode not in codes:
+        pytest.fail(
+            "Terraform command failed; inspect diagnostics locally (state/plan may contain secrets). Check init, TF_VAR_docker_host and Docker.",
+            pytrace=False,
+        )
+    return result
 
 
-def test_reject_inconsistent_2():
-    report = sample()
-    report["drift_plan"]["resource_changes"][0]["change"]["actions"] = ["no-op"]
-    with pytest.raises(ValueError):
-        grading.validate_report(report)
-
-
-def test_own_observations_are_complete_and_consistent():
-    report = json.loads(Path(__file__).with_name("report.json").read_text())
-    grading.validate_report(report)
+def test_actual_plan():
+    directory = workdir()
+    with tempfile.TemporaryDirectory(prefix="mlops-plan-") as tmp:
+        plan = Path(tmp) / "check.tfplan"
+        result = terraform(
+            directory,
+            "plan",
+            "-input=false",
+            "-lock=false",
+            "-detailed-exitcode",
+            f"-out={plan}",
+            codes=(0, 2),
+        )
+        data = json.loads(terraform(directory, "show", "-json", str(plan)).stdout)
+    changes = {
+        row["address"]: row["change"]["actions"]
+        for row in data.get("resource_changes", [])
+    }
+    assert changes.get("docker_container.web") == ["create"], (
+        "Unexpected web actions: inspect terraform plan in your task directory"
+    )
+    if result.returncode != 2:
+        pytest.fail("Drift plan must indicate changes (exit code 2)", pytrace=False)

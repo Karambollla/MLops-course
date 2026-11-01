@@ -1,38 +1,48 @@
 # Kubernetes: живой, но неготовый API
 
-Зависит от Docker, kind и образа модуля 03. Объясни разницу процесса, готовности и маршрутизации Service.
-
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов. Нужен Docker daemon, kubectl и kind; Python Kubernetes SDK не требуется.
-
-Создай kind mlops-course по SETUP. `docker build -t housing:course -f labs/housing/Dockerfile .`; `kind load docker-image housing:course --name mlops-course`. Редактируй task-local deployment.yaml при необходимости, примени `kubectl --context kind-mlops-course apply -f modules/07-kubernetes/tasks/01-unready/deployment.yaml`. Собери get pods, describe/events, endpoints и HTTP ответы. `kubectl --context kind-mlops-course port-forward deployment/housing 8000:8000` помогает диагностике Pod, но не доказывает маршрутизацию Service. Не подменяй readiness на /live.
-
-Проверка выбранного задания:
+Нужны Docker daemon, kind, kubectl; Python Kubernetes SDK не нужен.
+`MLOPS_KUBE_CONTEXT` обязателен: тесты не используют текущий контекст.
+Команды подготовки изменяют только твой учебный кластер; pytest только читает.
+Для каждого задания подготовь указанное состояние отдельно, не запускай все live
+тесты одной командой: состояния 01 и 02 несовместимы.
 
 ```bash
-make task TASK=07-kubernetes/01-unready
-python scripts/run_task.py run 07-kubernetes/01-unready -- --report modules/07-kubernetes/tasks/01-unready/report.json
+export MLOPS_KUBE_CONTEXT=kind-mlops-course
+export MLOPS_KUBE_NAMESPACE=default
+export MLOPS_API_URL=http://127.0.0.1:8000
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Если кластер ещё не создан: `kind create cluster --name mlops-course` по SETUP.
+Все манифесты ниже — task-local; `labs/kubernetes/deployment.yaml` не используется.
 
-## Контракт и проверка
+Используй базовый образ без модели, не заменяй readiness на /live.
 
-`validate_report(report) -> {"diagnosis": "model_not_ready", "service_routes_traffic": False}`. Для сценария fixture: Running, ready=false, /live=200, /ready=503, endpoints=0, image housing:course, model_version=null, разные probe paths /live и /ready и событие readiness. Другие сочетания отклоняй.
+```bash
+docker build -t housing:course -f labs/housing/Dockerfile .
+kind load docker-image housing:course --name mlops-course
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" apply -f modules/07-kubernetes/tasks/01-unready/deployment.yaml
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" get pods -l app=housing
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" describe pods -l app=housing
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" get endpointslices -l kubernetes.io/service-name=housing -o yaml
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" port-forward deployment/housing 8000:8000
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
+Последняя команда — в отдельном терминале после старта процесса. Затем:
 
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
+```bash
+curl --max-time 10 -i "$MLOPS_API_URL/live"
+curl --max-time 10 -i "$MLOPS_API_URL/ready"
+MLOPS_RUN_INTEGRATION=1 python -m pytest modules/07-kubernetes/tasks/01-unready/test_task.py -q
+```
 
-## Завершение
+Иллюстрация: Pod Running, READY 0/1; /live HTTP200, /ready HTTP503,
+readiness events и ни одного ready endpoint Service. Прямой port-forward к Pod
+даёт доступ к живому процессу и не доказывает маршрутизацию Service.
+После стабилизации ожидается 1 passed. Без флага — 1 skipped с инструкцией;
+с флагом отсутствие CLI/контекста/API вызывает failure.
+Останови port-forward перед переходом к 02; кластер оставь.
 
-Останови port-forward; оставь Deployment для следующего задания. Перед Helm удали ручные ресурсы тем же task-local манифестом.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Все команды — из корня репозитория после [SETUP](../../../../SETUP.md).
+Выводы ниже иллюстрируют инварианты; это не запись успешного выполнения.
+Отчёт, JSON-подтверждение и письменное описание не требуются.
+[Теория](../../README.md) · [Подсказки](../../hints.md)

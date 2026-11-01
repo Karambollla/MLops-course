@@ -1,38 +1,51 @@
 # Kubernetes: сбой и восстановление
 
-Зависит от рабочего v1 в 07/02. Не нужно искусственно исчерпывать RAM.
-
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов.
-
-Смени Deployment image на housing:missing; сохрани events/describe. При Never ожидается ErrImageNeverPull, при политике скачивания — ImagePullBackOff. `kubectl --context kind-mlops-course rollout undo deployment/housing`; дождись готовности, проверь image и model_version через predict. Вручную объясни Pending, crash loop, OOMKilled и почему рестарт не устраняет превышение memory limit. Дополнительно: добавь startupProbe в task-local манифест и исследуй PVC kind, не утверждая, что диск Pod постоянный.
-
-Проверка выбранного задания:
+Нужны Docker daemon, kind, kubectl; Python Kubernetes SDK не нужен.
+`MLOPS_KUBE_CONTEXT` обязателен: тесты не используют текущий контекст.
+Команды подготовки изменяют только твой учебный кластер; pytest только читает.
+Для каждого задания подготовь указанное состояние отдельно, не запускай все live
+тесты одной командой: состояния 01 и 02 несовместимы.
 
 ```bash
-make task TASK=07-kubernetes/03-failure
-python scripts/run_task.py run 07-kubernetes/03-failure -- --report modules/07-kubernetes/tasks/03-failure/report.json
+export MLOPS_KUBE_CONTEXT=kind-mlops-course
+export MLOPS_KUBE_NAMESPACE=default
+export MLOPS_API_URL=http://127.0.0.1:8000
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Если кластер ещё не создан: `kind create cluster --name mlops-course` по SETUP.
+Все манифесты ниже — task-local; `labs/kubernetes/deployment.yaml` не используется.
 
-## Контракт и проверка
+Начни с рабочего v1 из 02, а не с model-less состояния 01.
+`deployment.yaml` рядом — исходный baseline для дополнительного опыта со startupProbe/PVC;
+основная последовательность ниже меняет существующий Deployment 02.
 
-`validate_report(report) -> {"restored": True, "image_failure": str}`. housing:missing + Never требует ErrImageNeverPull (для IfNotPresent/Always — ImagePullBackOff); failed_ready=false. Откат housing:v1, ready=true, HTTP200 и совпадение непустых rollback_model/expected_model. diagnoses должен различать четыре причины как fixture.
+```bash
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" rollout history deployment/housing
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" set image deployment/housing api=housing:missing
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" rollout status deployment/housing --timeout=60s
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" describe pods -l app=housing
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
+Иллюстрация: rollout status даёт ненулевой exit; новый Pod с imagePullPolicy Never
+имеет ErrImageNeverPull. Старый Ready Pod может продолжать обслуживать запросы
+во время неудачного RollingUpdate. При Always/IfNotPresent ожидай другую ошибку
+скачивания; Pending/CrashLoopBackOff/OOMKilled имеют другие причины.
 
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
+```bash
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" rollout undo deployment/housing
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" rollout status deployment/housing --timeout=120s
+MLOPS_RUN_INTEGRATION=1 python -m pytest modules/07-kubernetes/tasks/02-release/test_task.py -q
+```
 
-## Завершение
+Перед последней командой заново запусти Service port-forward и укажи ожидаемую v1
+model_version по README 02. Инварианты восстановления: image housing:v1,
+READY 1/1, predict HTTP200 и прежняя модель. Если история содержит другие изменения,
+выбери явный `--to-revision` из history. Автотест 02 проверяет текущее состояние,
+а причину предшествующего отказа наблюдай непосредственно в describe/events.
+Дополнительно исследуй startupProbe и PVC; диск Pod не становится постоянным от restart.
+Перед Helm удали свои ресурсы командой delete -f с манифестом 02, останови forwarding.
 
-Удали ручные ресурсы Kubernetes перед Helm, останови port-forward. Кластер mlops-course оставь следующему модулю.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Все команды — из корня репозитория после [SETUP](../../../../SETUP.md).
+Выводы ниже иллюстрируют инварианты; это не запись успешного выполнения.
+Отчёт, JSON-подтверждение и письменное описание не требуются.
+[Теория](../../README.md) · [Подсказки](../../hints.md)

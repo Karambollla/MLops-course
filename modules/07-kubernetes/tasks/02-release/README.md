@@ -1,38 +1,56 @@
 # Kubernetes: рабочий выпуск
 
-Зависит от своего bundle из 01–03 и 07/01. Версионируй код и модель вместе.
-
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов.
-
-`docker build -t housing:v1 -f labs/kubernetes/Dockerfile.model .`; `kind load docker-image housing:v1 --name mlops-course`. В task-local deployment.yaml поменяй image, добавь непустой ConfigMap и envFrom/env; примени и дождись rollout (120s). Port-forward **service/housing** и отправь labs/housing/request.json. Сохрани настоящий model_version из ответа и bundle manifest, digest и endpoints. Измени обычную настройку ConfigMap, покажи старое значение env до rollout и новое после него; объясни requests/limits.
-
-Проверка выбранного задания:
+Нужны Docker daemon, kind, kubectl; Python Kubernetes SDK не нужен.
+`MLOPS_KUBE_CONTEXT` обязателен: тесты не используют текущий контекст.
+Команды подготовки изменяют только твой учебный кластер; pytest только читает.
+Для каждого задания подготовь указанное состояние отдельно, не запускай все live
+тесты одной командой: состояния 01 и 02 несовместимы.
 
 ```bash
-make task TASK=07-kubernetes/02-release
-python scripts/run_task.py run 07-kubernetes/02-release -- --report modules/07-kubernetes/tasks/02-release/report.json
+export MLOPS_KUBE_CONTEXT=kind-mlops-course
+export MLOPS_KUBE_NAMESPACE=default
+export MLOPS_API_URL=http://127.0.0.1:8000
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Если кластер ещё не создан: `kind create cluster --name mlops-course` по SETUP.
+Все манифесты ниже — task-local; `labs/kubernetes/deployment.yaml` не используется.
 
-## Контракт и проверка
+Заверши обучение и экспорт bundle из 01–03 в `work/artifacts/`.
+В task-local `deployment.yaml` замени image на housing:v1, добавь собственный
+ConfigMap с обычной настройкой, подключи его через envFrom. Сохрани requests/limits
+и разные probes. Не добавляй готовую модель в базовый образ course.
 
-`validate_report(report) -> {"model_version": str, "ready": True}`. Непустой release_id, immutable housing:v1 и digest sha256/64 hex, desired=ready>=1, endpoints>=1, HTTP200 и непустая model_version == expected_model_version. configmap непустой, совпадает с pod_env; config_revision == pod_config_revision; 0 < memory_request_mib <= memory_limit_mib <= 1024.
+```bash
+docker build -t housing:v1 -f labs/kubernetes/Dockerfile.model .
+kind load docker-image housing:v1 --name mlops-course
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" apply -f modules/07-kubernetes/tasks/02-release/deployment.yaml
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" rollout status deployment/housing --timeout=120s
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" get pods -l app=housing -o wide
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" get endpointslices -l kubernetes.io/service-name=housing -o yaml
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" port-forward service/housing 8000:8000
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
+Последняя команда — в отдельном терминале. Узнай ожидаемую версию своего доверенного
+bundle (joblib загружай только свой), передай её независимо от HTTP ответа:
 
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
+```bash
+export MLOPS_EXPECTED_MODEL_VERSION="$(python -c 'import joblib; print(joblib.load("work/artifacts/model.joblib")["model_version"])')"
+curl --fail --max-time 10 "$MLOPS_API_URL/ready"
+curl --fail --max-time 10 -H 'Content-Type: application/json' --data @labs/housing/request.json "$MLOPS_API_URL/predict"
+MLOPS_RUN_INTEGRATION=1 python -m pytest modules/07-kubernetes/tasks/02-release/test_task.py -q
+```
 
-## Завершение
+Иллюстрация: READY 1/1, deployment updated/ready равны desired, imageID непустой,
+ready endpoints >=1; predict HTTP200 с predictions для каждого instance и
+model_version, равной своему bundle. Ожидается 1 passed; без флага 1 skipped.
+Тест не проверяет историю изменения env. Для этого измени свою обычную настройку
+ConfigMap и примени манифест: старый Pod сохраняет прежнее env.
+После `kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" rollout restart deployment/housing`
+и rollout status новый Pod получит новую настройку. Проверь только свой несекретный
+ключ через printenv (не весь env): имя ConfigMap/ключ выбери в собственном манифесте.
+Сохрани image v1 для отката, останови port-forward.
 
-Останови port-forward, сохрани v1 для отката. Перед Helm удали Deployment/Service/свой ConfigMap.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Все команды — из корня репозитория после [SETUP](../../../../SETUP.md).
+Выводы ниже иллюстрируют инварианты; это не запись успешного выполнения.
+Отчёт, JSON-подтверждение и письменное описание не требуются.
+[Теория](../../README.md) · [Подсказки](../../hints.md)

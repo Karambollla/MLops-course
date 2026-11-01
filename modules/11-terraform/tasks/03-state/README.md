@@ -1,38 +1,22 @@
-# Terraform: state, import и backend
+# State и реальные привязки
 
-Зависит от собственного ресурса/state 11/01–02. JSON state не редактируй и не выкладывай в Git.
+Все три задачи используют **один** каталог `modules/11-terraform/tasks/01-repeat` и его существующий state. Не применяй labs/terraform параллельно с тем же именем контейнера. Terraform 1.11.4/provider 3.0.2 закреплены в main.tf. Docker endpoint узнай через `docker context inspect --format '{{.Endpoints.docker.Host}}'` и задай `TF_VAR_docker_host`.
 
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов.
-
-Из каталога 11/01 выполни terraform state list и terraform show -json; сохрани только разрешённые IDs/адреса в report.json. Сверь ID контейнера с docker inspect. В design.md объясни потерю связи после потери state, конфликт имени при новом create и import по точному resource address/ID. Не нужно действительно терять state: разбор сценария должен быть явно помечен как прогноз. Раздели HCL, state и .terraform.lock.hcl. Опиши remote backend, locking, контроль доступа, secrets и почему sensitive не шифрует JSON. Вручную оцени осмысленность аргументов и процедуру восстановления.
-
-Проверка выбранного задания:
+На восстановленном стенде:
 
 ```bash
-make task TASK=11-terraform/03-state
-python scripts/run_task.py run 11-terraform/03-state -- --report modules/11-terraform/tasks/03-state/report.json
+terraform -chdir=modules/11-terraform/tasks/01-repeat state list
+docker inspect --format '{{.Id}}' mlops-course-terraform
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Ожидаются docker_image.web и docker_container.web; тест сравнивает фактический ID Docker с ID в terraform show -json, не печатая state. Docker CLI должен использовать тот же endpoint, что Terraform.
 
-## Контракт и проверка
+Разбор без удаления state: HCL описывает желаемое состояние, state связывает address с ID, .terraform.lock.hcl закрепляет версии/checksums provider. При потере state ресурс существует, но Terraform может предложить create и столкнуться с занятым именем. `terraform import docker_container.web <actual-ID>` восстанавливает привязку в соответствующем каталоге; не выполняй import в уже связанном состоянии. Командная работа требует remote backend с locking и ограничением доступа. sensitive скрывает вывод, но не шифрует state. Отдельное design.md не требуется.
 
-Grader сверяет оба resource addresses, state_container_id == observed_container_id == import_id, import_address docker_container.web, versions, lost_state_plan_actions=[create], запрет state в Git, secrets=true/sensitive_encrypts=false, remote/locking/access_control=true и три назначения roles fixture. Результат {"bindings_consistent": True, "team_backend_ready": True}.
+```bash
+MLOPS_RUN_INTEGRATION=1 MLOPS_TERRAFORM_DIR="$PWD/modules/11-terraform/tasks/01-repeat" make task TASK=11-terraform/03-state
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
+Рабочий каталог задаётся явно; нет CLI/provider/state — тест падает с подсказкой. Проверки не выполняют init/apply/destroy и не выводят plan/state. Завершив все три задачи, вручную выполни `terraform -chdir=modules/11-terraform/tasks/01-repeat destroy`, затем удали saved plan; state и plan не коммить.
 
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
-
-## Завершение
-
-В каталоге 11/01 с прежним Docker endpoint выполни terraform destroy и проверь удаление только учебного контейнера. Удали plan, не коммить state.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Команды запускай из корня курса после [SETUP](../../../../SETUP.md). Python-тесты проверяют функции на фиксированных входах; они не подтверждают запуск стенда. Live-проверки включаются только `MLOPS_RUN_INTEGRATION=1`, читают существующий стенд и не создают/не удаляют ресурсы. При включённом флаге недоступные зависимости — ошибка с подсказкой.

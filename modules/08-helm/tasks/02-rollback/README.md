@@ -1,38 +1,59 @@
-# Helm: неудачный релиз и rollback
+# Helm: неудачный релиз и откат
 
-Зависит от 08/01. Требуются два реальных разных bundle/image, а не переименование одного mutable tag.
-
-## Что редактировать
-
-Основная заготовка — `report.json`: заполни её собственными наблюдениями по `report.template.json`. В `solution.py` есть необязательный сборщик `collect_report()`, который можно реализовать для автоматизации read-only запросов; ручное заполнение отчёта тоже допустимо.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов.
-
-Выполни `helm --kube-context kind-mlops-course upgrade housing-demo modules/08-helm/tasks/01-values/chart --set image.tag=missing --atomic --timeout 60s` с сохранёнными values. Сохрани ненулевой exit, history и прежнюю модель в predict. Обучи/собери реальный v2, загрузи image в kind, выпусти и проверь новую модель. Выбери из history конкретную рабочую REVISION и `helm --kube-context kind-mlops-course rollback housing-demo REVISION --wait`. Убедись в старой версии модели. Вручную объясни chart version/appVersion/model version и почему --atomic не откатывает внешние данные.
-
-Проверка выбранного задания:
+Нужны завершённый 01-values, Helm 3, kubectl, kind и рабочий release housing-demo
+с моделью v1. Используй task-local chart и values-dev.yaml из 01-values.
+Не начинай с пустого release: atomic upgrade требует рабочую предыдущую ревизию.
 
 ```bash
-make task TASK=08-helm/02-rollback
-python scripts/run_task.py run 08-helm/02-rollback -- --report modules/08-helm/tasks/02-rollback/report.json
+export MLOPS_KUBE_CONTEXT=kind-mlops-course
+export MLOPS_KUBE_NAMESPACE=default
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" history housing-demo
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" upgrade housing-demo modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml --set image.tag=missing --atomic --timeout 60s
+echo $?
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" history housing-demo
+kubectl --context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" get deployment housing-demo -o jsonpath='{.spec.template.spec.containers[0].image}'
 ```
 
-CLI читает JSON --report и печатает наблюдения. Содержательную схему проверяет pytest через готовый grading.py; --collect включает TODO автоматизации сбора.
+Иллюстрация: ненулевой exit upgrade, history содержит неуспешную попытку и
+восстановленную ревизию; Deployment снова housing:v1. С прежним Service
+port-forward из 01 проверь /predict: HTTP200, model_version равна модели до отказа.
+Точные номера ревизий выбирай из своего history, не из примера.
 
-## Контракт и проверка
+Обучи реальную отличающуюся v2 через собственный housing CLI с новым seed/параметрами.
+Перед заменой сохрани нужные локальные v1 артефакты; старый housing:v1 в kind
+сохрани. Экспортёр читает именно output задания 01-ml/02-candidate и не запускает
+обучение; `--replace` осознанно заменяет общий work/artifacts для следующей сборки.
+Проверь новый bundle перед экспортом.
 
-`validate_report(report) -> {"atomic_restored": True, "manual_restored": True}`. Неуспешный upgrade_exit !=0 с housing:missing и atomic=true; строго возрастающие before/failed/restored/v2/manual ревизии, target=before_revision, model до/после atomic/manual одинаковая непустая, v2 отличается, все три predict_statuses=200. history_statuses соответствует fixture; external_state_rolled_back=false.
+```bash
+python -m housing.train --data work/housing.csv --output modules/01-ml/tasks/02-candidate/output --seed 43
+python modules/01-ml/tasks/02-candidate/export.py --replace
+docker build -t housing:v2 -f labs/kubernetes/Dockerfile.model .
+kind load docker-image housing:v2 --name mlops-course
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" upgrade housing-demo modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml --set image.tag=v2 --wait --timeout 120s
+curl --fail --max-time 10 -H 'Content-Type: application/json' --data @labs/housing/request.json http://127.0.0.1:8000/predict
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" history housing-demo
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
+Иллюстрация: новая успешная ревизия и отличающаяся model_version v2. При необходимости
+перезапусти port-forward после смены Pod. Выбери рабочую v1 ревизию из history:
 
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
+```bash
+read -r REVISION
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" rollback housing-demo "$REVISION" --wait --timeout 120s
+curl --fail --max-time 10 -H 'Content-Type: application/json' --data @labs/housing/request.json http://127.0.0.1:8000/predict
+```
 
-## Завершение
+Инвариант: создаётся новая ревизия release с image v1 и первоначальной model_version.
+Chart version, appVersion и model_version обозначают разные вещи; `--atomic`
+не откатывает внешние данные. Автоматический тест исторических переходов не
+предлагается: наблюдай команды и реальные ответы, JSON-аттестация не нужна.
+После блока останови forwarding и удали свой release:
 
-`helm --kube-context kind-mlops-course uninstall housing-demo`; останови port-forward. После Kubernetes-блока удали только kind кластер mlops-course.
+```bash
+helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" uninstall housing-demo
+```
 
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Все команды — из корня репозитория после [SETUP](../../../../SETUP.md).
+Выводы иллюстрируют инварианты, а не успешный прогон. Отчёт не требуется.
+[Теория](../../README.md) · [Подсказки](../../hints.md)

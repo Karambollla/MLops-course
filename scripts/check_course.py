@@ -67,7 +67,7 @@ for folder in modules:
             errors.append(f"{folder.name}: missing {name}")
     if (folder / "README.md").is_file() and "## Материалы" not in (folder / "README.md").read_text():
         errors.append(f"{folder.name}: no annotated sources")
-# Every original practice assignment has its own physical starter and tests.
+# Technical exercises have starters/tests; guides have examples without fake tests.
 catalog_path = ROOT / "modules" / "tasks.json"
 if not catalog_path.is_file():
     errors.append("Missing modules/tasks.json")
@@ -87,7 +87,19 @@ else:
             errors.append(f"Invalid task ID: {task['id']}")
             continue
         directory = ROOT / "modules" / parts[0] / "tasks" / parts[1]
-        for name in ["README.md", task.get("starter", "solution.py"), task.get("tests", "test_task.py")]:
+        kind = task.get("kind", "exercise")
+        if kind not in {"exercise", "integration", "guide"}:
+            errors.append(f"{task['id']}: unsupported material kind {kind}")
+        required = ["README.md", task.get("starter", "solution.py")]
+        tests = task.get("tests")
+        if kind == "guide":
+            if tests is not None or task.get("entrypoint") is not None:
+                errors.append(f"{task['id']}: guides must not have pretend tests/CLI")
+        elif not isinstance(tests, str):
+            errors.append(f"{task['id']}: technical task needs a test file")
+        else:
+            required.append(tests)
+        for name in required:
             target = (directory / name).resolve()
             if not target.is_relative_to(directory.resolve()) or not target.is_file():
                 errors.append(f"{task['id']}: missing/invalid {name}")
@@ -101,4 +113,4 @@ if errors:
     print("\n".join(errors))
     sys.exit(1)
 words = sum(len(re.findall(r"\b[\w-]+\b", p.read_text())) for p in markdown)
-print(f"PASS: {len(modules)} modules / 53 tasks, {len(markdown)} Markdown files, {words} words; local links, fences, UTF-8, Python AST and JSON")
+print(f"PASS: {len(modules)} modules / 53 topics ({sum(t.get('kind') != 'guide' for t in tasks)} technical, {sum(t.get('kind') == 'guide' for t in tasks)} guides), {len(markdown)} Markdown files, {words} words; local links, fences, UTF-8, Python AST and JSON")

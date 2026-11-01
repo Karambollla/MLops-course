@@ -94,19 +94,19 @@
     {
       "id": "03-service-ci/02-container",
       "title": "Образ",
-      "starter": "evidence.json",
+      "starter": "README.md",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
+      "kind": "integration",
       "entrypoint": null
     },
     {
       "id": "03-service-ci/03-ci",
       "title": "CI",
-      "starter": "ci-runs.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "evidence",
+      "kind": "guide",
       "entrypoint": null
     },
     {
@@ -175,65 +175,65 @@
     {
       "id": "06-clearml/02-agent",
       "title": "Дополнительный путь: Server и Agent",
-      "starter": "report.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "linux-x86_64",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "06-clearml/03-comparison-failure",
       "title": "Сравнение и отказ",
-      "starter": "report.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "07-kubernetes/01-unready",
       "title": "Живой, но неготовый API",
-      "starter": "report.json",
+      "starter": "deployment.yaml",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "07-kubernetes/02-release",
       "title": "Рабочий выпуск",
-      "starter": "report.json",
+      "starter": "deployment.yaml",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "07-kubernetes/03-failure",
       "title": "Сбой",
-      "starter": "report.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "08-helm/01-values",
       "title": "Values",
-      "starter": "report.json",
+      "starter": "values-dev.yaml",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "08-helm/02-rollback",
       "title": "Неудачный релиз",
-      "starter": "report.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "09-monitoring/01-load-dashboard",
@@ -242,16 +242,16 @@
       "tests": "test_task.py",
       "platform": "cpu",
       "kind": "exercise",
-      "entrypoint": "solution.py"
+      "entrypoint": null
     },
     {
       "id": "09-monitoring/02-outage",
       "title": "Отказ",
-      "starter": "report.json",
+      "starter": "rules.yaml",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "09-monitoring/03-quality-drift",
@@ -260,7 +260,7 @@
       "tests": "test_task.py",
       "platform": "cpu",
       "kind": "exercise",
-      "entrypoint": "solution.py"
+      "entrypoint": null
     },
     {
       "id": "10-vault/01-policy",
@@ -278,43 +278,43 @@
       "tests": "test_task.py",
       "platform": "cpu",
       "kind": "exercise",
-      "entrypoint": "solution.py"
+      "entrypoint": null
     },
     {
       "id": "10-vault/03-integration",
       "title": "Интеграционное решение",
-      "starter": "report.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "11-terraform/01-repeat",
       "title": "Повтор",
-      "starter": "report.json",
+      "starter": "main.tf",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "11-terraform/02-drift",
       "title": "Drift",
-      "starter": "report.json",
+      "starter": "README.md",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "11-terraform/03-state",
       "title": "State",
-      "starter": "report.json",
+      "starter": "README.md",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "12-ansible/01-idempotency",
@@ -331,17 +331,17 @@
       "starter": "playbook.yaml",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "integration",
+      "entrypoint": null
     },
     {
       "id": "12-ansible/03-tool-boundaries",
       "title": "Границы Dockerfile, Terraform и Ansible",
-      "starter": "comparison.md",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "written",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "13-qdrant/01-plumbing",
@@ -349,7 +349,7 @@
       "starter": "solution.py",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "exercise",
+      "kind": "integration",
       "entrypoint": "solution.py"
     },
     {
@@ -376,7 +376,7 @@
       "starter": "solution.py",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "exercise",
+      "kind": "integration",
       "entrypoint": null
     },
     {
@@ -385,7 +385,7 @@
       "starter": "solution.py",
       "tests": "test_task.py",
       "platform": "cpu",
-      "kind": "exercise",
+      "kind": "integration",
       "entrypoint": null
     },
     {
@@ -412,7 +412,7 @@
       "starter": "solution.py",
       "tests": "test_task.py",
       "platform": "linux-x86_64",
-      "kind": "exercise",
+      "kind": "integration",
       "entrypoint": null
     },
     {
@@ -445,38 +445,38 @@
     {
       "id": "16-llm-serving/03-tensorrt",
       "title": "TensorRT-LLM: собственный engine",
-      "starter": "engine-report.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "nvidia",
-      "kind": "evidence",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "17-career/01-defense",
       "title": "Защита собственного проекта",
-      "starter": "outline.md",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "written",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "17-career/02-interview",
       "title": "Пробное интервью",
-      "starter": "answers.json",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "written",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     },
     {
       "id": "17-career/03-resume",
       "title": "Резюме и карта пробелов",
-      "starter": "resume.md",
-      "tests": "test_task.py",
+      "starter": "README.md",
+      "tests": null,
       "platform": "cpu",
-      "kind": "written",
-      "entrypoint": "solution.py"
+      "kind": "guide",
+      "entrypoint": null
     }
   ]
 }

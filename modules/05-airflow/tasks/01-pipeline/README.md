@@ -4,7 +4,7 @@
 
 ## Где работать и контракт
 
-Редактируй `modules/05-airflow/tasks/01-pipeline/solution.py` (физическая заготовка рядом). Дополнительные свои тесты и `report.md` размещай в этой же папке. Полных решений в заготовке нет.
+Редактируй `modules/05-airflow/tasks/01-pipeline/solution.py` (физическая заготовка рядом). Дополнительные тесты размещай в этой же папке. Полных решений в заготовке нет.
 
 `run_training(data_path: str | Path, output_path: str | Path, seed: int = 42) -> dict`: вызови существующий housing.train в ML venv через subprocess.run с массивом аргументов и check=True; никаких shell=True. Возвращает только {path: str(output_path), run_key: output_path.name}, после проверки наличия всех четырёх артефактов. Не заменяй обучение фиктивными файлами. Редактируй solution.py и housing_pipeline.py в этой папке. DAG mounted parent-инфраструктурой; путь данных /work/housing.csv, output /work/runs/RUN_KEY. Ключ стабилен от SHA CSV, seed/config и версии кода, не от времени. DAG schedule=None, catchup=False, max_active_runs=1, retries=1; top-level не импортирует sklearn. Через XCom только путь/run_key. До реализации ожидается NotImplementedError в task, а не import error. Gate и publish добавляются из следующего задания.
 
@@ -43,6 +43,10 @@ docker compose -f labs/airflow/compose.yaml exec airflow airflow dags list-runs 
 
 ## Приёмка и очистка
 
-Пройди все тесты `test_task.py`, сохрани перечисленные артефакты и добавь объяснение решений/ограничений в `report.md`. Для инфраструктурных опытов приложи реальные команды и вывод: offline проверки не доказывают развёртывание, доступность удалённого сервера или качество объяснения. Ручная оценка: воспроизводимость шагов, соответствие исходному контракту, объяснение причины сбоя и корректное восстановление.
+Выполни `test_task.py`: проверяются результаты функций, ошибки входа и изменения технических артефактов. Письменный пересказ выполнения не требуется.
 
 После опыта останови стенд: `docker compose -f labs/airflow/compose.yaml down`. Uvicorn останови Ctrl+C. Не удаляй volume без экспорта истории; артефакты `work/` сохрани для следующих модулей.
+
+## Пример корректного результата
+
+В DAG validate_data завершается success, train_evaluate запускает housing.train в ML venv. XCom содержит только path и run_key. До реализации обучения ожидается NotImplementedError из заготовки; import error DAG или отсутствие данных — отдельные ошибки подготовки.

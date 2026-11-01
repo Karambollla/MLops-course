@@ -4,13 +4,13 @@
 
 ## Задания
 
-Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+Технические задания проверяются тестами функций или работающего стенда. Руководства содержат команды и примеры ожидаемого поведения без обязательной письменной сдачи.
 
-| Задание | Основной файл | Платформа |
+| Тема | Файлы и проверка | Платформа |
 |---|---|---|
-| [Минимальные права](tasks/01-policy/README.md) | [Заготовка](tasks/01-policy/solution.py) · [тесты](tasks/01-policy/test_task.py) | cpu |
-| [Истечение](tasks/02-expiry/README.md) | [Заготовка](tasks/02-expiry/solution.py) · [тесты](tasks/02-expiry/test_task.py) | cpu |
-| [Интеграционное решение](tasks/03-integration/README.md) | [Заготовка](tasks/03-integration/report.json) · [тесты](tasks/03-integration/test_task.py) | cpu |
+| [Минимальные права](tasks/01-policy/README.md) | [Старт](tasks/01-policy/solution.py) · [Тесты функций](tasks/01-policy/test_task.py) | cpu |
+| [Истечение](tasks/02-expiry/README.md) | [Старт](tasks/02-expiry/solution.py) · [Тесты функций](tasks/02-expiry/test_task.py) | cpu |
+| [Интеграционное решение](tasks/03-integration/README.md) | Руководство с примерами | cpu |
 
 ## Как запускать
 
@@ -20,7 +20,7 @@
 make task TASK=10-vault/01-policy
 ```
 
-Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
+Подставь идентификатор выбранной темы из README. Незавершённые функции дают ошибки тестов; проверки стенда без включения пропускаются, а для руководств runner показывает путь к материалу. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Функции проверяются прямо на фиксированных входах. Live-проверки читают существующий стенд только с MLOPS_RUN_INTEGRATION=1; guides не требуют отдельной сдачи.
 
 ## Подготовка
 
@@ -46,4 +46,4 @@ docker compose -f labs/vault/compose.yaml exec -e VAULT_TOKEN=course-root vault 
 
 ## Завершение
 
-`unset VAULT_TOKEN`, затем `docker compose -f labs/vault/compose.yaml down`. Dev-секреты исчезнут. Не сохраняй root/token в отчёт или shell-скрипт проекта.
+`unset VAULT_TOKEN`, затем `docker compose -f labs/vault/compose.yaml down`. Dev-секреты исчезнут. Не сохраняй root/token в файлы проекта.

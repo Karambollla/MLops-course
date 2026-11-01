@@ -1,16 +1,22 @@
-"""ClearML: реальный offline train — учебная заготовка. Импорт не обращается к инфраструктуре."""
+"""Student ClearML integration. Importing does not require the SDK."""
 
+import argparse
 import os
+from pathlib import Path
 
 
-def train_and_log(task):
-    """Запусти housing train CLI и зарегистрируй реальные данные/метрики/артефакты."""
-    # TODO(student): реализуй контракт из README и тестов.
+def train_and_log(task, data_path: Path, output_dir: Path, seed: int = 42):
+    """Train housing, connect provenance, log test metrics and upload real artifacts."""
+    # TODO(student): call housing.train.train and use its actual output files.
     raise NotImplementedError("train_and_log")
 
 
 def main():
-    """Без аргументов; CLEARML_OFFLINE_MODE=1 локально по умолчанию; agent всегда online."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
     # Необязательный SDK нужен только для реального запуска, не для сбора тестов.
     from clearml import Task
 
@@ -19,9 +25,8 @@ def main():
         and os.getenv("CLEARML_OFFLINE_MODE", "1") == "1"
     )
     task = Task.init(project_name="mlops-course", task_name="housing-student")
-    task.connect({"seed": 42})
     try:
-        return train_and_log(task)
+        return train_and_log(task, args.data, args.output, args.seed)
     finally:
         task.close()
 

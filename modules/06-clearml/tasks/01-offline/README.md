@@ -1,38 +1,34 @@
-# ClearML: реальный offline train
+# ClearML: реальное offline обучение
 
-Зависит от собственного housing train из модулей 01–03. Сессия на Mac CPU не является remote execution.
+Реализуй `train_and_log(task, data_path, output_dir, seed=42)` в `solution.py`.
+Вызови `housing.train.train(data_path, output_dir, seed)` из собственного модуля 01.
+Прочитай полученные metrics.json и manifest.json: `task.connect` получает seed и
+SHA256 CSV; `task.get_logger().report_scalar` — title="quality", series="mae"/"rmse",
+реальные candidate.test метрики, iteration=0. Через `task.upload_artifact` загрузи
+файлы с именами model.joblib и manifest.json. Ошибки обучения должны распространяться.
+Возвращаемое значение не оценивается. `main()` уже закрывает Task в finally.
 
-## Что редактировать
-
-Реализуй предметные TODO в `solution.py`: входы и ожидаемые результаты перечислены ниже в разделе «Контракт и проверка» и в `test_task.py`. После практического опыта заполни `report.json` собственными наблюдениями по `report.template.json`.
-
-Готовый `grading.py` проверяет согласованность отчёта; писать свой валидатор не требуется. `scenario.json` содержит синтетический пример для тестов и не подтверждает выполнение практики. Сдавай свои измерения и команды, сохраняя ожидаемое поведение тестов.
-
-## Подготовка и выполнение
-
-Команды запускаются из корня репозитория. Общая установка — [SETUP](../../../../SETUP.md). Окружение CPU с pytest; SDK/CLI устанавливаются отдельно по SETUP и не нужны для сбора тестов. ClearML импортируется только в main(). Данные и output bundle задай в своей реализации через CLI housing.
-
-Установи `labs/clearml/requirements.txt` и `pip install --no-deps -e labs/housing`. Запусти `CLEARML_OFFLINE_MODE=1 python modules/06-clearml/tasks/01-offline/solution.py`. Подключи свой CLI, не игрушечную метрику; сохрани путь сессии из вывода SDK. Пример JSON показывает форму, а не ожидаемую точность твоей модели.
-
-Проверка выбранного задания:
+Команды из корня репозитория, CPU-окружение [SETUP](../../../../SETUP.md),
+завершённые модули 01–03. Для тестов SDK не нужен:
 
 ```bash
-make task TASK=06-clearml/01-offline
-python scripts/run_task.py run 06-clearml/01-offline --
+python -m pytest modules/06-clearml/tasks/01-offline/test_task.py -q
 ```
 
-CLI без аргументов выполняет реальную операцию; параметры берёт из окружения, как описано выше.
+После реализации ожидаются 4 passed; до реализации — NotImplementedError.
+Тесты подменяют только обучение и SDK: проверяют вызовы твоей функции на разных
+выходах обучения, а не качество модели или наличие настоящей offline-сессии.
 
-## Контракт и проверка
+Реальная практика (установи `labs/clearml/requirements.txt` в отдельное окружение):
 
-`train_and_log(task) -> dict`: обучить housing, зарегистрировать seed, SHA256 данных, реальные MAE/RMSE и model/manifest через переданный SDK Task; вернуть отчёт схемы scenario.json. `validate_report(report) -> {"mode": "offline", "mae": float}` проверяет seed, 64 hex hash, конечные неотрицательные метрики (RMSE >= MAE), оба артефакта, session_path и нулевой exit. `main()` создаёт Task, вызывает train_and_log и всегда закрывает Task.
+```bash
+CLEARML_OFFLINE_MODE=1 python modules/06-clearml/tasks/01-offline/solution.py --data work/housing.csv --output modules/06-clearml/tasks/01-offline/output --seed 42
+find modules/06-clearml/tasks/01-offline/output -maxdepth 1 -type f
+```
 
-Схема JSON задаётся `report.template.json`; null нужно заменить измерениями. Возвращаемые значения и отрицательные примеры зафиксированы в `test_task.py`. Отсутствующие поля, несовместимые типы и противоречивые наблюдения должны приводить к `ValueError`. До реализации тесты **RED**: незаполненный report.json вызывает ValueError; предметная заготовка выбрасывает `NotImplementedError`; это ожидаемый незавершённый код, а не успешный тест.
-
-Офлайн-проверки проверяют числа, переходы состояний и согласованность наблюдений. Они не доказывают реальный запуск стенда. Вручную предъяви команды, время, обезличенные ответы и объяснение причин; совпадение схемы без реальных наблюдений не закрывает практику. Тесты не разворачивают и не удаляют ресурсы. Любые добавленные live-проверки разрешены только с `MLOPS_RUN_INTEGRATION=1`, читают уже работающий стенд и не меняют его.
-
-## Завершение
-
-Закрой Task в finally; сохрани путь offline cache. Удаляй только собственные временные bundle/cache после экспорта отчёта.
-
-Зависимости и теория: [модуль](../../README.md), [подсказки](../../hints.md). Не сохраняй credentials, токены или чувствительные state/plan в Git.
+Иллюстрация результата: SDK печатает путь offline session; output содержит
+model.joblib, metrics.json, manifest.json, split.json. В SDK-сессии есть те же
+MAE/RMSE и два непустых артефакта. Путь cache зависит от SDK-конфигурации.
+Это локальный tracking; очередь и remote execution проверяются в следующем задании.
+Отчёт и письменное описание не требуются. Сохрани свой cache для импорта;
+временный output можно удалить после использования. Credentials в Git не добавляй.

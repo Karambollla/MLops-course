@@ -4,7 +4,7 @@
 
 ## Где работать и контракт
 
-Редактируй `modules/01-ml/tasks/02-candidate/solution.py` (физическая заготовка рядом). Дополнительные свои тесты и `report.md` размещай в этой же папке. Полных решений в заготовке нет.
+Редактируй `modules/01-ml/tasks/02-candidate/solution.py` (физическая заготовка рядом). Дополнительные тесты размещай в этой же папке. Полных решений в заготовке нет.
 
 `build_pipeline(seed: int = 42) -> sklearn.pipeline.Pipeline`; `train(data: Path, output: Path, seed: int) -> None`; `main() -> None`. CLI --data --output --seed (default 42). Сравни Dummy, Ridge и небольшой RandomForest на одном split из 01-baseline; выбери конфигурацию по validation, затем один финальный test. Preprocessing fit только на train. Создай model.joblib, metrics.json, manifest.json, split.json по [контракту](../../../../labs/housing/README.md). Bundle schema_version=1, pipeline, features=FEATURES, непустой model_version. metrics: baseline/candidate × validation/test × mae/rmse. manifest: seed, data_sha256, versions, parameters, feature_order, split. Сохраняй полную модель с preprocessing; публикация атомарная, нельзя оставлять частично готовый активный bundle. Приёмка на полном housing: candidate.test.mae <= .9*baseline.test.mae. Маленький тест ниже проверяет механику, а не качество датасета.
 
@@ -60,6 +60,10 @@ python modules/01-ml/tasks/02-candidate/export.py --replace
 
 ## Приёмка и очистка
 
-Пройди все тесты `test_task.py`, сохрани перечисленные артефакты и добавь объяснение решений/ограничений в `report.md`. Для инфраструктурных опытов приложи реальные команды и вывод: offline проверки не доказывают развёртывание, доступность удалённого сервера или качество объяснения. Ручная оценка: воспроизводимость шагов, соответствие исходному контракту, объяснение причины сбоя и корректное восстановление.
+Выполни `test_task.py`: проверяются результаты функций, ошибки входа и изменения технических артефактов. Письменный пересказ выполнения не требуется.
 
-Docker не требуется. Временные тестовые файлы убирает pytest. Сохрани CSV, split, отчёты и модель в `work/` для следующих модулей; окружение можно завершить `deactivate`. Учебные DVC demo/remote удаляй только после экспорта результатов.
+Docker не требуется. Временные тестовые файлы убирает pytest. Сохрани необходимые CSV, split и модель для следующих модулей; окружение можно завершить `deactivate`. Учебные DVC demo/remote удаляй только после экспорта результатов.
+
+## Пример корректного результата
+
+В output/ созданы model.joblib, metrics.json, manifest.json, split.json. Повторный запуск на тех же данных и seed даёт одинаковый split и прогнозы в допуске. На полном датасете candidate.test.mae не больше 0.9 × baseline.test.mae; unit-тесты на маленькой fixture не заменяют эту проверку качества.
