@@ -42,8 +42,6 @@ Terraform хорошо описывает ресурсы через API provider
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Terraform Docker tutorials](https://developer.hashicorp.com/terraform/tutorials/docker-get-started) — локальные create/change/destroy без облака.
 - [Terraform state](https://developer.hashicorp.com/terraform/language/state) — назначение state, locking и чувствительные значения.
 - [Docker provider](https://registry.terraform.io/providers/kreuzwerker/docker/3.0.2/docs) — схема ресурсов и Docker host.

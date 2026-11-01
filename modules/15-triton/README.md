@@ -34,8 +34,6 @@ Triton readiness, readiness конкретной модели и успешны�
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Triton architecture](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/architecture.html) — backend, scheduler и model instances.
 - [Model configuration](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/model_configuration.html) — dims, batch и input/output.
 - [skl2onnx tutorial](https://onnx.ai/sklearn-onnx/) — поддерживаемые converters и initial_types.

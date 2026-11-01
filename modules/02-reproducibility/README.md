@@ -48,8 +48,6 @@ DVC remote может быть локальной директорией, поэ
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [DVC get started](https://dvc.org/doc/start) — data management, local remote и восстановление версий.
 - [DVC pipelines](https://dvc.org/doc/start/data-pipelines) — deps, outs и воспроизведение шагов.
 - [sklearn model persistence](https://scikit-learn.org/stable/model_persistence.html) — совместимость и ограничения pickle/joblib/ONNX.

@@ -36,7 +36,5 @@ Go — преимущество для инфраструктурных серв
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Google ML engineering rules](https://developers.google.com/machine-learning/guides/rules-of-ml) — практические вопросы качества данных, простого baseline и эксплуатации.
 - [FSDL course](https://fullstackdeeplearning.com/course/2022/) — повторить lifecycle, testing и deployment перед защитой.

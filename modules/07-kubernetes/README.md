@@ -38,8 +38,6 @@ Pending: планирование и ресурсы. ImagePullBackOff: обра�
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Kubernetes basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/) — Deployment, Service, scaling и updates.
 - [Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) — различие liveness/readiness/startup.
 - [Resource management](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) — requests, limits и OOM.

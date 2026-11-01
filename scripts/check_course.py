@@ -15,6 +15,10 @@ errors = []
 def authored_files():
     for path in ROOT.rglob("*"):
         relative = path.relative_to(ROOT)
+        if relative.parts[:2] == ("docs", "superpowers") or relative.as_posix() in {
+            "docs/progress-ledger.md", "docs/task-migration-ledger.md"
+        }:
+            continue
         if path.is_file() and not any(part in EXCLUDED or part.startswith(".venv-") or part.endswith(".egg-info") for part in relative.parts):
             yield path
 

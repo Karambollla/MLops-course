@@ -55,8 +55,6 @@ with Path('work/config.json').open(encoding='utf-8') as stream:
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Python Tutorial](https://docs.python.org/3.12/tutorial/) — разделы Data Structures, Errors and Exceptions, Modules; читать после собственных примеров.
 - [NumPy fundamentals](https://numpy.org/doc/stable/user/basics.html) — shape, dtype, indexing и broadcasting; воспроизвести маленькие массивы.
 - [pandas getting started](https://pandas.pydata.org/docs/getting_started/intro_tutorials/) — чтение таблиц, выбор строк и преобразования; не учить весь API наизусть.

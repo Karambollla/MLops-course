@@ -20,4 +20,4 @@
 | Triton Inference Server, ONNX | [Модуль](../modules/15-triton/README.md) · [задания](../modules/15-triton/practice.md) | [tasks](../modules/15-triton/tasks/) · [labs/triton](../labs/triton/) | Parity; дополнительный inference |
 | vLLM, SGLang, TensorRT-LLM | [Модуль](../modules/16-llm-serving/README.md) · [задания](../modules/16-llm-serving/practice.md) | [tasks](../modules/16-llm-serving/tasks/) · [labs/llm](../labs/llm/) | Расчёт памяти; дополнительный GPU benchmark |
 
-Рекомендации и примеры подготовки к работе без обязательных отчётов: [модуль 17](../modules/17-career/README.md), [основной проект](../projects/capstone/README.md), [поиск](../projects/search/README.md). Наличие строки означает наличие материалов, а не факт runtime-проверки: фактические результаты находятся в [отчёте](verification.md).
+Рекомендации и примеры подготовки к работе без обязательных отчётов: [модуль 17](../modules/17-career/README.md), [основной проект](../projects/capstone/README.md), [поиск](../projects/search/README.md). Наличие строки означает наличие материалов, а не факт runtime-проверки: сценарии и ограничения описаны в [проверках курса](verification.md).

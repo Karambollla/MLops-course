@@ -44,8 +44,6 @@ Variables позволяют описывать окружения без коп
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Ansible getting started](https://docs.ansible.com/projects/ansible/latest/getting_started/index.html) — inventory, playbook и modules.
 - [Handlers](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html) — notify и порядок выполнения.
 - [Check mode](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html) — возможности и ограничения check/diff.

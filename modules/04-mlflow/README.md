@@ -48,8 +48,6 @@ Autologging ускоряет первый запуск, но способен с
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [MLflow Tracking](https://mlflow.org/docs/3.1.1/ml/tracking/) — manual logging, tracking server и stores; если URL перенаправляет, выбери версию 3.1.1.
 - [MLflow Registry](https://mlflow.org/docs/3.1.1/ml/model-registry/) — registered models, versions и aliases.
 - [MLOps Zoomcamp](https://github.com/DataTalksClub/mlops-zoomcamp/tree/main/02-experiment-tracking) — дополнительный разбор экспериментов; адаптировать команды под закреплённый SDK.

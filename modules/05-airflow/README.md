@@ -50,8 +50,6 @@ Airflow не обеспечивает магическое exactly once для �
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Airflow Docker 3.1.0](https://airflow.apache.org/docs/apache-airflow/3.1.0/howto/docker-compose/index.html) — требования к Docker, память и границы учебного стенда.
 - [Airflow tutorials](https://airflow.apache.org/docs/apache-airflow/3.1.0/tutorial/index.html) — TaskFlow и устройство DAG.
 - [Airflow best practices](https://airflow.apache.org/docs/apache-airflow/3.1.0/best-practices.html) — идемпотентность, top-level code и передача данных.

@@ -36,7 +36,5 @@ Values-файлы dev и demo могут различаться ресурсам
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Helm quickstart](https://helm.sh/docs/v3/intro/quickstart/) — базовые install/upgrade/rollback для Helm 3.
 - [Chart template guide](https://helm.sh/docs/v3/chart_template_guide/) — values, quoting, flow control и debugging.

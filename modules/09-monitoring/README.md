@@ -46,8 +46,6 @@ Runbook должен содержать симптом, проверку, вос
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Prometheus first steps](https://prometheus.io/docs/introduction/first_steps/) — scrape, expression browser и targets.
 - [Prometheus querying](https://prometheus.io/docs/prometheus/latest/querying/basics/) — labels, selectors и временные диапазоны.
 - [Grafana getting started](https://grafana.com/docs/grafana/latest/fundamentals/getting-started/) — datasource, panels и dashboards.

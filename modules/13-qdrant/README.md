@@ -38,8 +38,6 @@ Qrels — разметка соответствия query → relevant document 
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Qdrant quickstart](https://qdrant.tech/documentation/quickstart/) — collections, upsert и query_points.
 - [Qdrant filtering](https://qdrant.tech/documentation/concepts/filtering/) — payload filters и условия.
 - [FastEmbed](https://qdrant.tech/documentation/fastembed/) — CPU embeddings и поддерживаемые модели.

@@ -1,4 +1,4 @@
 {
   "config": { "MD013": false },
-  "ignores": ["work/**", "modules/*/tasks/*/output/**", "**/.terraform/**", "**/.pytest_cache/**", ".venv*/**", ".tools/**", "**/*.egg-info/**"]
+  "ignores": ["work/**", "modules/*/tasks/*/output/**", "docs/superpowers/**", "docs/progress-ledger.md", "docs/task-migration-ledger.md", "**/.terraform/**", "**/.pytest_cache/**", ".venv*/**", ".tools/**", "**/*.egg-info/**"]
 }

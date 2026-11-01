@@ -54,8 +54,6 @@ print(pipe.predict([[4.0]]))
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [California Housing](https://scikit-learn.org/stable/datasets/real_world.html#california-housing-dataset) — описание признаков, единицы target и происхождение данных.
 - [Common pitfalls](https://scikit-learn.org/stable/common_pitfalls.html) — inconsistent preprocessing, data leakage, random state.
 - [Model evaluation](https://scikit-learn.org/stable/modules/model_evaluation.html) — regression metrics и ограничения сравнения.

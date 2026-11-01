@@ -38,8 +38,6 @@ OpenAI-compatible endpoint не гарантирует поддержку все
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [vLLM documentation](https://docs.vllm.ai/en/v0.10.2/) — версия лабораторной: serving, metrics и installation.
 - [SGLang repository](https://github.com/sgl-project/sglang/tree/v0.4.10.post2) — README и docs именно выбранного тега; latest CLI может отличаться.
 - [TensorRT-LLM backend 25.06](https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2560/user-guide/docs/tensorrtllm_backend/README.html) — conversion, engine и model repository релиза 25.06.

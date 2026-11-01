@@ -34,8 +34,6 @@ Elasticsearch использует dense_vector, OpenSearch — knn_vector с п
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Elasticsearch kNN](https://www.elastic.co/guide/en/elasticsearch/reference/8.17/knn-search.html) — dense_vector и knn query выбранной версии.
 - [Elasticsearch bulk](https://www.elastic.co/guide/en/elasticsearch/reference/8.17/docs-bulk.html) — NDJSON и per-item errors.
 - [OpenSearch vector search](https://docs.opensearch.org/docs/2.19/vector-search/) — knn_vector, engines и запросы.

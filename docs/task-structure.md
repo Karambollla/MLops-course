@@ -38,7 +38,7 @@ python modules/15-triton/tasks/01-onnx/export.py
 
 ## Общий код
 
-Пакет housing и Compose/Helm/Terraform-стенды находятся в labs. Канонические реализации упражнений — в tasks. Например, `python -m housing.train` вызывает функции из [кандидата](../modules/01-ml/tasks/02-candidate/README.md), а housing.evaluate — из [baseline](../modules/01-ml/tasks/01-baseline/README.md). Старые CLI-файлы служат адаптерами; не создавай в них вторую реализацию.
+Пакет housing и Compose/Helm/Terraform-стенды находятся в labs. Канонические реализации упражнений — в tasks. Например, `python -m housing.train` вызывает функции из [кандидата](../modules/01-ml/tasks/02-candidate/README.md), а housing.evaluate — из [baseline](../modules/01-ml/tasks/01-baseline/README.md). CLI-файлы вызывают эти реализации через адаптеры. Реализацию упражнения редактируй в папке задания.
 
 `course_tasks.load_task("00-python/01-records")` позволяет использовать функцию предыдущего задания. `load_solution(__file__)` используется тестами для загрузки соседней заготовки. Разные solution.py загружаются с разными именами, поэтому не перетирают друг друга.
 

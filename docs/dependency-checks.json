@@ -1,5 +1,4 @@
 {
-  "checked_on": "2026-10-31",
   "python": "3.12.12 macOS ARM64",
   "method": "uv pip compile (resolution, not installation/runtime)",
   "results": [

@@ -46,8 +46,6 @@ Queue label не гарантирует наличие GPU: agent должен �
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [ClearML first steps](https://clear.ml/docs/latest/docs/getting_started/main/) — Task, experiment management и remote execution.
 - [ClearML offline mode](https://clear.ml/docs/latest/docs/guides/set_offline/) — локальные сессии и их импорт; отличать от очереди.
 - [ClearML Server](https://clear.ml/docs/latest/docs/deploying_clearml/clearml_server/) — компоненты server и требования к самостоятельному развёртыванию.

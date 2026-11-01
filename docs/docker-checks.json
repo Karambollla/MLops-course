@@ -1,5 +1,4 @@
 {
-  "checked_on": "2026-10-31",
   "environment": "Docker linux/aarch64; functional checks, not a hardware benchmark",
   "fixture": "Temporary synthetic sklearn Pipeline; not a housing course solution",
   "results": [
@@ -67,7 +66,7 @@
           "alert firing on stop",
           "alert resolves on recovery"
         ],
-        "alert_detection_seconds": 36.1
+        "alert_detection_seconds": 39.0
       }
     },
     {
@@ -211,24 +210,5 @@
       "check": "student train/gate/publish implementations",
       "reason": "Exercises intentionally not implemented by validation"
     }
-  ],
-  "fixed": [
-    {
-      "file": "labs/mlflow/compose.yaml",
-      "issue": "Host port5000 occupied by macOS Control Center",
-      "fix": "Host5001 -> container5000; SDK/docs updated"
-    },
-    {
-      "file": "labs/vault/compose.yaml",
-      "issue": "OOMKilled at memory limit256MiB",
-      "fix": "1GiB limit; health, policy and TTL verified"
-    },
-    {
-      "file": "labs/terraform/main.tf",
-      "issue": "Repeat plan replaced container due bridge -> null",
-      "fix": "Explicit network_mode=bridge; empty repeat plan verified"
-    }
-  ],
-  "network": "Transient Docker registry EOFs recovered by retrying official image downloads; no registry replacement.",
-  "cleanup": "Only temporary Compose projects, kind cluster and Terraform container/state were used; final Docker inventory checked separately."
+  ]
 }

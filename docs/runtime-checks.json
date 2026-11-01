@@ -1,6 +1,5 @@
 {
-  "checked_on": "2026-10-31",
-  "platform": "macOS ARM64 Python 3.12.12; no Docker daemon",
+  "platform": "macOS ARM64, CPython 3.12.12; native CPU checks",
   "results": [
     {
       "check": "ansible syntax",

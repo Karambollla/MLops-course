@@ -48,8 +48,6 @@ CI проверяет изменения в изолированной сред�
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/) — TestClient, assertions и проверка HTTP-контракта.
 - [FastAPI deployment](https://fastapi.tiangolo.com/deployment/concepts/) — startup, workers, память и репликация.
 - [Docker workshop](https://docs.docker.com/get-started/workshop/) — image, container, volume и Compose.

@@ -40,8 +40,6 @@ Vault не удаляет секрет из логов, если приложе�
 
 ## Материалы
 
-Все ссылки отобраны 2026-10-31; статус HTTP-проверки — в [отчёте](../../docs/verification.md).
-
 - [Vault getting started](https://developer.hashicorp.com/vault/tutorials/get-started) — dev server, auth, secrets и policy.
 - [KV v2](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2) — версионирование и API paths.
 - [Kubernetes auth](https://developer.hashicorp.com/vault/docs/auth/kubernetes) — identity Pod и выдача ограниченных token.
