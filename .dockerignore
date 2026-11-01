@@ -1,4 +1,5 @@
 .git
+modules/*/tasks/*/output
 .venv*
 .tools
 **/__pycache__

@@ -1,0 +1,7 @@
+name: "housing"
+platform: "onnxruntime_onnx"
+max_batch_size: 32
+input [ { name: "features" data_type: TYPE_FP32 dims: [ 8 ] } ]
+output [ { name: "variable" data_type: TYPE_FP32 dims: [ 1 ] } ]
+instance_group [ { kind: KIND_CPU count: 1 } ]
+dynamic_batching { preferred_batch_size: [ 4, 8 ] max_queue_delay_microseconds: 1000 }

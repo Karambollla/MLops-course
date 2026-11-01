@@ -6,12 +6,14 @@
 
 ## Артефакты
 
-`python -m housing.train --data work/housing.csv --output work/artifacts --seed 42` после реализации создаёт:
+`python -m housing.train --data work/housing.csv --output modules/01-ml/tasks/02-candidate/output --seed 42` после реализации создаёт:
 
 - `model.joblib`: словарь `schema_version=1`, `pipeline` (обученный sklearn Pipeline), `features` (точно `housing.features.FEATURES`), `model_version` (непустая строка).
 - `metrics.json`: ключи `baseline` и `candidate`; у каждого `validation` и `test` с `mae`, `rmse`.
 - `manifest.json`: seed, data_sha256, versions, parameters, feature_order, split.
 - `split.json`: train/validation/test со списками исходных индексов строк.
+
+После проверки результата выполни `python modules/01-ml/tasks/02-candidate/export.py`: готовый скрипт переносит комплект в `work/artifacts/`, откуда его читают API и контейнеры. Для замены отличающегося результата нужен `--replace`. Самостоятельная реализация обучения по-прежнему обязательна.
 
 Канонический порядок: MedInc, HouseAge, AveRooms, AveBedrms, Population, AveOccup, Latitude, Longitude. Target: MedHouseVal, единица — 100000 USD. Сериализуй весь preprocessing вместе с моделью. Не загружай чужой pickle/joblib.
 

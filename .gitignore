@@ -2,6 +2,7 @@
 .venv-*/
 .tools/
 work/
+/modules/*/tasks/*/output/
 __pycache__/
 *.pyc
 *.egg-info/

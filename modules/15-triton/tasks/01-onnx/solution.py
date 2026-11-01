@@ -31,7 +31,7 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("labs/triton/model_repository/housing/1/model.onnx"),
+        default=Path(__file__).resolve().parent / "output" / "model.onnx",
     )
     args = parser.parse_args()
     export_bundle(args.bundle, args.output)

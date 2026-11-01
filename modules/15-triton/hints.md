@@ -8,7 +8,7 @@
 2. Узнай output через `session.get_outputs()`; variable — ожидаемое имя converter, но проверять его нужно фактически.
 3. ONNX Runtime принимает NumPy float32, а не произвольный JSON. Перед преобразованием упорядочь столбцы.
 4. В config dims не включают batch при max_batch_size > 0. Пример shape [1,8] содержит один объект.
-5. В model_repository должны быть и config, и model.onnx. Пустая папка версии — заготовка, а не рабочая модель.
+5. После проверки ONNX выполни `python modules/15-triton/tasks/01-onnx/export.py`. В `work/triton/model_repository/housing/` должны быть config.pbtxt и 1/model.onnx. Пустая папка версии — заготовка, а не рабочая модель.
 
 ## Самопроверка
 

@@ -10,13 +10,32 @@
 
 ## Исходное задание
 
-Создай отдельное окружение, установи `labs/triton/requirements.txt` и housing с --no-deps. Реализуй `modules/15-triton/tasks/01-onnx/solution.py`: экспорт с именем input features и opset 17; сохрани модель в `labs/triton/model_repository/housing/1/model.onnx`.
+Создай отдельное окружение, установи `labs/triton/requirements.txt` и housing с --no-deps. Реализуй `modules/15-triton/tasks/01-onnx/solution.py`: экспорт с именем input features и opset 17. Стандартный выход CLI — `output/model.onnx` рядом с заготовкой; создай родительскую папку в своей реализации.
 
 ```bash
 python modules/15-triton/tasks/01-onnx/solution.py
 ```
 
-Через ONNX Runtime узнай фактические output name/shape и согласуй config.pbtxt. Проверь parity на 100 строках и сохрани максимальную абсолютную ошибку. Добавь тест перестановки признаков: preprocessing обязан восстановить канонический порядок до создания массива.
+Через ONNX Runtime узнай фактические output name/shape и согласуй [config.pbtxt](config.pbtxt) в этой папке задания. Проверь parity на 100 строках и сохрани максимальную абсолютную ошибку. Добавь тест перестановки признаков: preprocessing обязан восстановить канонический порядок до создания массива.
+
+## Передача модели Triton
+
+После проверки ONNX и конфигурации запусти готовый скрипт:
+
+```bash
+python modules/15-triton/tasks/01-onnx/export.py
+```
+
+Он копирует `config.pbtxt` и `output/model.onnx` в `work/triton/model_repository/housing/config.pbtxt` и `work/triton/model_repository/housing/1/model.onnx`. Этот model repository монтируется Compose-стендом следующего задания. Скрипт не запускает решение, ONNX Runtime или Triton; он проверяет только наличие непустых файлов. Совместимость конфигурации и parity проверяй самостоятельно.
+
+Одинаковые файлы не меняются; при другом существующем результате требуется `--replace`. Скрипт работает из любой директории при вызове по абсолютному пути. Конфигурация переносится перед моделью; каждый файл заменяется атомарно, но комплект не является одной транзакцией. После замены перезапусти Triton:
+
+```bash
+python modules/15-triton/tasks/01-onnx/export.py --replace
+docker compose -f labs/triton/compose.yaml restart triton
+```
+
+Первый запуск сервера выполняется в следующем задании на совместимой платформе. `output/` и `work/` исключены из Git; редактируемый `config.pbtxt` сохраняется вместе с заданием.
 
 ## Проверка
 

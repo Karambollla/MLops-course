@@ -24,10 +24,10 @@ make task TASK=01-ml/02-candidate
 
 До реализации ожидается RED: `NotImplementedError`, а не ошибка импорта зависимостей. После реализации все offline-тесты должны быть зелёными. Они создают временные данные через pytest tmp_path; полный housing автоматически не скачивается.
 
-CLI из корня (пути аргументов относительно текущей директории; для JSONL передай полный путь к fixture):
+CLI из корня; результат обучения сохраняется в `output/` этого задания:
 
 ```bash
-python scripts/run_task.py run 01-ml/02-candidate -- --data work/housing.csv --output work/artifacts --seed 42
+python scripts/run_task.py run 01-ml/02-candidate -- --data work/housing.csv --output modules/01-ml/tasks/02-candidate/output --seed 42
 ```
 
 ## Требования практического опыта
@@ -35,10 +35,28 @@ python scripts/run_task.py run 01-ml/02-candidate -- --data work/housing.csv --o
 Реализуй `build_pipeline(seed)` и CLI обучения по контракту заголовка `train.py`. Сравни baseline, Ridge и небольшой RandomForestRegressor на одном split. Не подбирай параметры по test. Заверши CLI:
 
 ```bash
-python -m housing.train --data work/housing.csv --output work/artifacts --seed 42
+python -m housing.train --data work/housing.csv --output modules/01-ml/tasks/02-candidate/output --seed 42
 ```
 
 Ожидаются `model.joblib`, `metrics.json`, `manifest.json`, `split.json`. Порог приёмки: MAE выбранной модели на test не больше 90% MAE baseline на том же test. Если не достигнут, исследуй вход и pipeline; не меняй test ради прохождения порога. Финальное test-сравнение выполняй после выбора по validation.
+
+## Передача результата следующим модулям
+
+После обучения и проверки качества запусти готовый скрипт:
+
+```bash
+python modules/01-ml/tasks/02-candidate/export.py
+```
+
+Он проверит наличие четырёх непустых файлов и синтаксис JSON, затем скопирует комплект из `output/` в `work/artifacts/`. Он не запускает решение, не загружает модель и не проверяет её качество. API, Docker и следующие модули используют этот каталог без дополнительного копирования.
+
+Совпадающие файлы не меняются. Если в `work/artifacts/` уже другой результат, скрипт перечислит конфликты и завершится без переноса. Для осознанной замены:
+
+```bash
+python modules/01-ml/tasks/02-candidate/export.py --replace
+```
+
+Модель заменяется последней; каждый файл заменяется атомарно, но весь комплект не является одной транзакцией. После замены перезапусти API. `output/` и `work/` исключены из Git; экспортёр и шаблоны остаются в репозитории. Сам экспортёр работает из любой директории при вызове по абсолютному пути.
 
 ## Приёмка и очистка
 

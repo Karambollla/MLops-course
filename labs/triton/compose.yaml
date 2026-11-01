@@ -5,5 +5,5 @@ services:
     image: nvcr.io/nvidia/tritonserver:25.06-py3
     command: tritonserver --model-repository=/models
     ports: ["127.0.0.1:8000:8000", "127.0.0.1:8001:8001", "127.0.0.1:8002:8002"]
-    volumes: ["./model_repository:/models:ro"]
+    volumes: ["../../work/triton/model_repository:/models:ro"]
     shm_size: 1g

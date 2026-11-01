@@ -8,7 +8,7 @@ import sys
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED = {"work", ".venv", ".tools", ".git", "__pycache__", ".pytest_cache", ".terraform"}
+EXCLUDED = {"work", "output", ".venv", ".tools", ".git", "__pycache__", ".pytest_cache", ".terraform"}
 errors = []
 
 

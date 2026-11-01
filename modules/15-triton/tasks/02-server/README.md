@@ -10,6 +10,8 @@
 
 ## Исходное задание
 
+Сначала выполни `export.py` предыдущего задания: в `work/triton/model_repository/housing/` должны находиться `config.pbtxt` и `1/model.onnx`. Compose монтирует этот каталог только для чтения. Без переноса результата модель не будет готова.
+
 ```bash
 docker compose -f labs/triton/compose.yaml up -d
 curl -i http://localhost:8000/v2/health/ready
