@@ -60,7 +60,7 @@ flowchart LR
 Из собственного bundle собери immutable image:
 
 ```bash
-docker build -t housing:course labs/housing
+docker build -t housing:course -f labs/housing/Dockerfile .
 docker build -t housing:v1 -f labs/kubernetes/Dockerfile.model .
 kind load docker-image housing:v1 --name mlops-course
 helm --kube-context kind-mlops-course upgrade --install housing labs/helm/housing --set image.tag=v1 --wait --timeout 120s

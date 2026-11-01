@@ -1,0 +1,7 @@
+- name: Student configuration
+  hosts: lab
+  gather_facts: false
+  vars:
+    workers: 1
+  tasks: [] # TODO: assert, template, notify
+  handlers: [] # TODO: marker/config check; this container has no systemd

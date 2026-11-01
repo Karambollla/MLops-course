@@ -2,36 +2,25 @@
 
 [Теория](README.md) · [Подсказки](hints.md)
 
-## Основной путь: Mac
+## Задания
 
-Создай отдельное окружение, установи `labs/triton/requirements.txt` и housing с --no-deps. Реализуй `labs/triton/export.py`: экспорт с именем input features и opset 17; сохрани модель в `labs/triton/model_repository/housing/1/model.onnx`.
+Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+
+| Задание | Основной файл | Платформа |
+|---|---|---|
+| [Экспорт и ONNX parity](tasks/01-onnx/README.md) | [Заготовка](tasks/01-onnx/solution.py) · [тесты](tasks/01-onnx/test_task.py) | cpu |
+| [Triton: запрос и готовность модели](tasks/02-server/README.md) | [Заготовка](tasks/02-server/solution.py) · [тесты](tasks/02-server/test_task.py) | linux-x86_64 |
+| [Сравнение inference latency](tasks/03-benchmark/README.md) | [Заготовка](tasks/03-benchmark/solution.py) · [тесты](tasks/03-benchmark/test_task.py) | linux-x86_64 |
+
+## Как запускать
+
+Все команды выполняются из корня курса после SETUP:
 
 ```bash
-python labs/triton/export.py
+make task TASK=15-triton/01-onnx
 ```
 
-Через ONNX Runtime узнай фактические output name/shape и согласуй config.pbtxt. Проверь parity на 100 строках и сохрани максимальную абсолютную ошибку. Добавь тест перестановки признаков: preprocessing обязан восстановить канонический порядок до создания массива.
-
-## Дополнительный путь: Linux x86_64
-
-```bash
-docker compose -f labs/triton/compose.yaml up -d
-curl -i http://localhost:8000/v2/health/ready
-curl -i http://localhost:8000/v2/models/housing/ready
-```
-
-Отправь inference в `/v2/models/housing/infer` с input features, datatype FP32 и shape [1,8]. Проверь имя output по метаданным. Без созданного ONNX model repository неполон, поэтому успешная готовность не ожидается.
-
-## Измерения
-
-Сравни один и тот же набор строк в FastAPI и Triton. Прогрей модель, затем выполни минимум 200 запросов при concurrency 1 и 4; запиши p50/p95, throughput, ошибки, batch и ресурсы. Если Triton не запускался, сохрани только локальный parity и план бенчмарка — без выдуманных цифр.
-
-## Критерии готовности
-
-- [ ] ONNX parity проходит с указанным допуском.
-- [ ] Input/output config согласованы с фактической моделью.
-- [ ] Batch dimension объяснена на одном и нескольких объектах.
-- [ ] Статус runtime-части явно указан.
+Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
 
 ## Завершение
 

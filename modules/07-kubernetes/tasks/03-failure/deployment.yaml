@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: housing
+  labels: {app: housing}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: housing}
+  template:
+    metadata:
+      labels: {app: housing}
+    spec:
+      containers:
+        - name: api
+          image: housing:course
+          imagePullPolicy: Never
+          ports: [{containerPort: 8000}]
+          env:
+            - name: MODEL_PATH
+              value: /models/model.joblib
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 768Mi}
+          livenessProbe:
+            httpGet: {path: /live, port: 8000}
+            initialDelaySeconds: 15
+          readinessProbe:
+            httpGet: {path: /ready, port: 8000}
+            initialDelaySeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: housing
+spec:
+  selector: {app: housing}
+  ports: [{port: 8000, targetPort: 8000}]

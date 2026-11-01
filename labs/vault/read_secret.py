@@ -1,16 +1,10 @@
-"""Упражнение 10: прочитать KV v2 с ограниченным токеном, не печатать секрет."""
-import os
-import json
-from urllib.request import Request, urlopen
+"""Совместимый вход; учебная реализация: modules/10-vault/tasks/01-policy/solution.py."""
+from course_tasks import load_task
 
-def main():
-    address = os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")
-    token = os.environ["VAULT_TOKEN"]
-    request = Request(address + "/v1/secret/data/housing", headers={"X-Vault-Token": token})
-    with urlopen(request, timeout=5) as response:
-        payload = json.load(response)
-    # TODO(student): use payload["data"]["data"] without logging secrets; handle expiry.
-    raise NotImplementedError("Подключи секрет и обработку 403, не выводи значение")
+
+def main() -> None:
+    return load_task("10-vault/01-policy").main()
+
 
 if __name__ == "__main__":
     main()

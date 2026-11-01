@@ -1,5 +1,7 @@
-"""Упражнение 00: контракт описан в modules/00-python/practice.md."""
+"""Совместимый вход: учебная функция находится в modules/00-python/tasks/01-records/solution.py."""
+
+from course_tasks import load_task
+
 
 def summarize(records: list[dict]) -> dict:
-    # TODO(student): фильтрация, конечность, среднее без мутации входа.
-    raise NotImplementedError("Реализуй summarize по контракту модуля 00")
+    return load_task("00-python/01-records").summarize(records)

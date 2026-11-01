@@ -1,0 +1,39 @@
+import os
+from urllib.request import urlopen
+
+import pytest
+from course_tasks import load_solution
+
+s = load_solution(__file__)
+
+
+def test_batch_axis_is_in_shape_not_in_feature_dimensions():
+    result = s.inference_request([{"b": 2, "a": 1}, {"a": 3, "b": 4}], ["a", "b"])
+    assert result == {
+        "inputs": [
+            {
+                "name": "features",
+                "datatype": "FP32",
+                "shape": [2, 2],
+                "data": [1.0, 2.0, 3.0, 4.0],
+            }
+        ]
+    }
+
+
+def test_empty_and_oversized_batch_are_rejected():
+    with pytest.raises(ValueError):
+        s.inference_request([], ["a"])
+    with pytest.raises(ValueError):
+        s.inference_request([{"a": 1}] * 33, ["a"])
+
+
+@pytest.mark.skipif(
+    os.getenv("MLOPS_RUN_INTEGRATION") != "1",
+    reason="Дополнительный Linux Triton runtime",
+)
+def test_live_server_and_model_are_both_ready():
+    base = os.getenv("TRITON_URL", "http://127.0.0.1:8000")
+    for path in ["/v2/health/ready", "/v2/models/housing/ready"]:
+        with urlopen(base + path, timeout=5) as response:
+            assert response.status == 200

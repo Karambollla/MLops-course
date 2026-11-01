@@ -1,0 +1,17 @@
+{
+  "failure_image": "housing:missing",
+  "pull_policy": "Never",
+  "event": "ErrImageNeverPull",
+  "failed_ready": false,
+  "rollback_image": "housing:v1",
+  "rollback_model": "run-v1",
+  "expected_model": "run-v1",
+  "rollback_ready": true,
+  "predict_status": 200,
+  "diagnoses": {
+    "Pending": "scheduling",
+    "CrashLoopBackOff": "process_crash",
+    "RunningNotReady": "readiness",
+    "OOMKilled": "memory_limit"
+  }
+}

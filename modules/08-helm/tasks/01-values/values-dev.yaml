@@ -1,0 +1,6 @@
+# TODO: одна реплика, image v1, явные resources и обычная config
+replicaCount: null
+image:
+  tag: null
+resources: {}
+config: {}

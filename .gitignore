@@ -13,3 +13,22 @@ __pycache__/
 *.joblib
 *.onnx
 .DS_Store
+
+# Локальные планы и рабочие журналы разработки курса
+/docs/superpowers/
+/docs/progress-ledger.md
+/docs/task-migration-ledger.md
+
+# Локальные настройки, отчёты инструментов и артефакты сборки
+.env.*
+!.env.example
+!.env.template
+*.log
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.tfplan
+.terraform.tfstate.lock.info
+.idea/

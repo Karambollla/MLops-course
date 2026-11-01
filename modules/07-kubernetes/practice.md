@@ -2,42 +2,25 @@
 
 [Теория](README.md) · [Подсказки](hints.md)
 
-## Задание 1. Живой, но неготовый API
+## Задания
 
-Создай кластер по SETUP, собери базовый image:
+Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
 
-```bash
-docker build -t housing:course labs/housing
-kind load docker-image housing:course --name mlops-course
-kubectl --context kind-mlops-course apply -f labs/kubernetes/deployment.yaml
-kubectl --context kind-mlops-course get pods
-```
+| Задание | Основной файл | Платформа |
+|---|---|---|
+| [Живой, но неготовый API](tasks/01-unready/README.md) | [Заготовка](tasks/01-unready/report.json) · [тесты](tasks/01-unready/test_task.py) | cpu |
+| [Рабочий выпуск](tasks/02-release/README.md) | [Заготовка](tasks/02-release/report.json) · [тесты](tasks/02-release/test_task.py) | cpu |
+| [Сбой](tasks/03-failure/README.md) | [Заготовка](tasks/03-failure/report.json) · [тесты](tasks/03-failure/test_task.py) | cpu |
 
-Ожидается Running с 0/1 Ready без модели. Изучи `describe pod` и readiness events. Доступ к Pod для диагностики можно получить через `kubectl port-forward deployment/housing 8000:8000`; это не проверка маршрутизации Service.
+## Как запускать
 
-## Задание 2. Рабочий выпуск
-
-После обучения:
+Все команды выполняются из корня курса после SETUP:
 
 ```bash
-docker build -t housing:v1 -f labs/kubernetes/Dockerfile.model .
-kind load docker-image housing:v1 --name mlops-course
-kubectl --context kind-mlops-course set image deployment/housing api=housing:v1
-kubectl --context kind-mlops-course rollout status deployment/housing --timeout=120s
-kubectl --context kind-mlops-course port-forward service/housing 8000:8000
+make task TASK=07-kubernetes/01-unready
 ```
 
-В другом терминале отправь request.json. Ожидаются Ready 1/1, HTTP 200 и правильная model_version. Добавь ConfigMap для непустой обычной настройки, затем объясни необходимость rollout при изменении env.
-
-## Задание 3. Сбой
-
-Смени image на несуществующий локальный тег `housing:missing`, изучи events и верни `housing:v1` через rollout undo. Отдельно объясни, как выглядел бы OOMKilled; не нужно намеренно расходовать всю RAM ноутбука. Дополнительно добавь startupProbe и исследуй PVC в kind.
-
-## Критерии готовности
-
-- [ ] Различаешь Pending, CrashLoopBackOff и неготовый Running.
-- [ ] Модель и код версионированы вместе; восстановлена рабочая версия.
-- [ ] Requests/limits объяснены и не превышают бюджет стенда.
+Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
 
 ## Завершение
 

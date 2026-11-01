@@ -1,0 +1,24 @@
+{
+  "mode": "online",
+  "task_id": "t-online-42",
+  "clone_of": "t-local-41",
+  "queue": "default",
+  "agent_id": "worker-1",
+  "states": [
+    "queued",
+    "in_progress",
+    "completed"
+  ],
+  "code_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "data_source": "https://example.invalid/versioned/housing-v1.csv",
+  "data_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "metrics": {
+    "mae": 0.42
+  },
+  "artifacts": [
+    "model.joblib"
+  ],
+  "web_status": 200,
+  "api_status": 200,
+  "files_status": 200
+}

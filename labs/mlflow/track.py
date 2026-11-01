@@ -1,12 +1,10 @@
-"""Упражнение 04: реальный train и регистрация, без фиктивных метрик."""
-import os
-import mlflow
-mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"))
-mlflow.set_experiment("housing-course")
+"""Совместимый вход; учебная реализация: modules/04-mlflow/tasks/01-experiments/solution.py."""
+from course_tasks import load_task
 
-def main():
-    # TODO(student): три конфигурации; log metrics/artifacts/model; aliases.
-    raise NotImplementedError("Подключи свой train и сравнение конфигураций")
+
+def main() -> None:
+    return load_task("04-mlflow/01-experiments").main()
+
 
 if __name__ == "__main__":
     main()

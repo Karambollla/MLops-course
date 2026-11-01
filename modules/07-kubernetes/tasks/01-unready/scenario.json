@@ -1,0 +1,14 @@
+{
+  "phase": "Running",
+  "ready": false,
+  "live_status": 200,
+  "ready_status": 503,
+  "service_ready_endpoints": 0,
+  "image": "housing:course",
+  "model_version": null,
+  "readiness_path": "/ready",
+  "liveness_path": "/live",
+  "events": [
+    "Readiness probe failed: HTTP 503"
+  ]
+}

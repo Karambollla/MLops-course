@@ -67,8 +67,38 @@ for folder in modules:
             errors.append(f"{folder.name}: missing {name}")
     if (folder / "README.md").is_file() and "## Материалы" not in (folder / "README.md").read_text():
         errors.append(f"{folder.name}: no annotated sources")
+# Every original practice assignment has its own physical starter and tests.
+catalog_path = ROOT / "modules" / "tasks.json"
+if not catalog_path.is_file():
+    errors.append("Missing modules/tasks.json")
+else:
+    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    tasks = catalog.get("tasks", [])
+    identifiers = [task.get("id", "") for task in tasks]
+    if len(tasks) != 53 or len(set(identifiers)) != len(tasks):
+        errors.append("Expected 53 unique tasks")
+    actual = {f"{module.name}/{folder.name}" for module in modules
+              for folder in (module / "tasks").glob("[0-9][0-9]-*") if folder.is_dir()}
+    if actual != set(identifiers):
+        errors.append(f"Task directory/catalog mismatch: {actual.symmetric_difference(identifiers)}")
+    for task in tasks:
+        parts = task["id"].split("/")
+        if len(parts) != 2:
+            errors.append(f"Invalid task ID: {task['id']}")
+            continue
+        directory = ROOT / "modules" / parts[0] / "tasks" / parts[1]
+        for name in ["README.md", task.get("starter", "solution.py"), task.get("tests", "test_task.py")]:
+            target = (directory / name).resolve()
+            if not target.is_relative_to(directory.resolve()) or not target.is_file():
+                errors.append(f"{task['id']}: missing/invalid {name}")
+        entrypoint = task.get("entrypoint")
+        if entrypoint and not (directory / entrypoint).is_file():
+            errors.append(f"{task['id']}: missing entrypoint {entrypoint}")
+        if f"tasks/{parts[1]}/README.md" not in (directory.parent.parent / "practice.md").read_text():
+            errors.append(f"{task['id']}: not linked from practice.md")
+
 if errors:
     print("\n".join(errors))
     sys.exit(1)
 words = sum(len(re.findall(r"\b[\w-]+\b", p.read_text())) for p in markdown)
-print(f"PASS: {len(modules)} modules, {len(markdown)} Markdown files, {words} words; local links, fences, UTF-8, Python AST and JSON")
+print(f"PASS: {len(modules)} modules / 53 tasks, {len(markdown)} Markdown files, {words} words; local links, fences, UTF-8, Python AST and JSON")

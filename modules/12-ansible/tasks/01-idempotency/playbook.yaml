@@ -1,0 +1,15 @@
+- name: Configure isolated lab container
+  hosts: lab
+  gather_facts: false
+  tasks:
+    - name: Create configuration directory
+      ansible.builtin.file:
+        path: /course-output/config
+        state: directory
+        mode: '0755'
+    - name: Write example service configuration
+      ansible.builtin.copy:
+        dest: /course-output/config/housing.env
+        content: "MODEL_PATH=/models/model.joblib\nWORKERS=1\n"
+        mode: '0644'
+    # TODO(student): add template, variables and a handler, preserve idempotency.

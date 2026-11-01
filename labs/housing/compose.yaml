@@ -1,7 +1,9 @@
 name: mlops-housing
 services:
   api:
-    build: .
+    build:
+      context: ../..
+      dockerfile: labs/housing/Dockerfile
     image: housing:course
     ports: ["127.0.0.1:8000:8000"]
     volumes: ["../../work/artifacts:/models:ro"]

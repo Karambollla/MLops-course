@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1,
+    "question": "Как обнаружишь training-serving skew?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 2,
+    "question": "Почему random split может переоценить качество?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 3,
+    "question": "Как откатить модель, если image не менялся?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 4,
+    "question": "Что делать при failed task после успешной внешней публикации?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 5,
+    "question": "Почему up=1 не доказывает готовность?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 6,
+    "question": "Какие данные нужны для актуальной MAE?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 7,
+    "question": "Чем state Terraform отличается от Ansible inventory?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 8,
+    "question": "Как избежать секретов в MLflow artifacts?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 9,
+    "question": "Когда lexical поиск полезнее vector?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 10,
+    "question": "Что ограничивает concurrency LLM-serving?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 11,
+    "question": "Как организовать воспроизводимость на разных workers?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  },
+  {
+    "id": 12,
+    "question": "Какие компоненты уберёшь для маленькой команды?",
+    "answer": null,
+    "project_example": null,
+    "verification": null
+  }
+]

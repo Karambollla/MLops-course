@@ -1,0 +1,18 @@
+{
+  "release_name": null,
+  "service_name": null,
+  "image": null,
+  "replicas": null,
+  "request_memory_mib": null,
+  "limit_memory_mib": null,
+  "config_before": null,
+  "config_after": null,
+  "checksum_before": null,
+  "checksum_after": null,
+  "checksum_location": null,
+  "render_changed_fields": null,
+  "ready": null,
+  "predict_status": null,
+  "model_version": null,
+  "expected_model_version": null
+}

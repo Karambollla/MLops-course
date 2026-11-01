@@ -1,0 +1,25 @@
+{
+  "release_name": "housing-demo",
+  "service_name": "housing-demo",
+  "image": "housing:v1",
+  "replicas": 1,
+  "request_memory_mib": 128,
+  "limit_memory_mib": 768,
+  "config_before": {
+    "LOG_LEVEL": "info"
+  },
+  "config_after": {
+    "LOG_LEVEL": "debug"
+  },
+  "checksum_before": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "checksum_after": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "checksum_location": "spec.template.metadata.annotations",
+  "render_changed_fields": [
+    "ConfigMap.data",
+    "Deployment.spec.template.metadata.annotations"
+  ],
+  "ready": true,
+  "predict_status": 200,
+  "model_version": "run-v1",
+  "expected_model_version": "run-v1"
+}

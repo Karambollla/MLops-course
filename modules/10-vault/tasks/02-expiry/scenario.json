@@ -1,0 +1,21 @@
+{
+  "issued_at": 100,
+  "expires_at": 160,
+  "before_at": 110,
+  "before_status": 200,
+  "after_at": 161,
+  "after_status": 403,
+  "renewable": false,
+  "renew_status": 400,
+  "renewable_trial": {
+    "renewable": true,
+    "renew_status": 200,
+    "ttl_before": 30,
+    "ttl_after": 60,
+    "revoke_status": 204,
+    "read_after_revoke": 403
+  },
+  "timeout_class": "network_timeout",
+  "auth_class": "access_denied",
+  "max_attempts": 1
+}

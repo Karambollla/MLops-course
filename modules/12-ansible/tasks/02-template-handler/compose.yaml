@@ -1,0 +1,11 @@
+name: task-ansible-template
+services:
+  controller:
+    build: ../../../../labs/ansible
+    working_dir: /lab
+    volumes:
+      - ./inventory.ini:/lab/inventory.ini:ro
+      - ./playbook.yaml:/lab/playbook.yaml:ro
+      - ./housing.env.j2:/lab/housing.env.j2:ro
+      - ../../../../work/ansible-template:/course-output
+    command: ansible-playbook -i inventory.ini playbook.yaml

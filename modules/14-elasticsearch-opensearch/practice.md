@@ -2,6 +2,26 @@
 
 [Теория](README.md) · [Подсказки](hints.md)
 
+## Задания
+
+Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+
+| Задание | Основной файл | Платформа |
+|---|---|---|
+| [Elasticsearch: bulk и ошибки](tasks/01-elasticsearch/README.md) | [Заготовка](tasks/01-elasticsearch/solution.py) · [тесты](tasks/01-elasticsearch/test_task.py) | cpu |
+| [OpenSearch: собственный kNN-запрос](tasks/02-opensearch/README.md) | [Заготовка](tasks/02-opensearch/solution.py) · [тесты](tasks/02-opensearch/test_task.py) | cpu |
+| [Сравнение и RRF](tasks/03-comparison/README.md) | [Заготовка](tasks/03-comparison/solution.py) · [тесты](tasks/03-comparison/test_task.py) | cpu |
+
+## Как запускать
+
+Все команды выполняются из корня курса после SETUP:
+
+```bash
+make task TASK=14-elasticsearch-opensearch/01-elasticsearch
+```
+
+Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
+
 ## Подготовка
 
 Останови Qdrant, ClearML и другие тяжёлые стенды. Запускай только один движок на порту 9200.
@@ -11,31 +31,6 @@ docker compose -f labs/search/elasticsearch.compose.yaml up -d
 curl -sS http://localhost:9200
 curl -sS -X PUT http://localhost:9200/course-docs -H 'Content-Type: application/json' --data-binary @labs/search/elasticsearch.mapping.json
 ```
-
-## Задание 1. Elasticsearch
-
-Напиши ingest-скрипт из corpus.json: стабильные IDs, NDJSON bulk, проверка items. Реализуй match-запрос и knn-запрос для одного query vector. Сохрани top-5, scores и время. Повторный ingest не меняет число документов.
-
-## Задание 2. OpenSearch
-
-```bash
-docker compose -f labs/search/elasticsearch.compose.yaml down
-docker compose -f labs/search/opensearch.compose.yaml up -d
-curl -sS -X PUT http://localhost:9200/course-docs -H 'Content-Type: application/json' --data-binary @labs/search/opensearch.mapping.json
-```
-
-Реализуй отдельный request shape для OpenSearch. Повтори тот же корпус, queries и k. Ошибки запуска сначала диагностируй по logs; для vm.max_map_count следуй инструкции своего Linux runtime.
-
-## Задание 3. Сравнение
-
-Сделай client-side RRF с c=60. Сравни keyword/vector/hybrid по Recall@2 и MRR на одинаковых qrels. Затем повтори на настоящих embeddings из модуля 13 с новой размерностью индексов. Не считай toy-векторы результатом обучения модели.
-
-## Критерии готовности
-
-- [ ] Оба движка реально проверены либо недоступный запуск честно отмечен.
-- [ ] Нет ошибок bulk items, IDs устойчивы.
-- [ ] Сравнение использует одинаковый corpus, embeddings, qrels и candidate pool.
-- [ ] Есть объяснение различий mappings, scores и ресурсного бюджета.
 
 ## Завершение
 

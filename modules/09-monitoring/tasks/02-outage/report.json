@@ -1,0 +1,15 @@
+{
+  "stopped_at": null,
+  "pending_at": null,
+  "firing_at": null,
+  "restarted_at": null,
+  "resolved_at": null,
+  "for_seconds": null,
+  "alert": null,
+  "states": null,
+  "down_up": null,
+  "recovered_up": null,
+  "no_model": null,
+  "additional_alert": null,
+  "runbook": null
+}

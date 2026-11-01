@@ -1,0 +1,12 @@
+{
+  "failure_image": null,
+  "pull_policy": null,
+  "event": null,
+  "failed_ready": null,
+  "rollback_image": null,
+  "rollback_model": null,
+  "expected_model": null,
+  "rollback_ready": null,
+  "predict_status": null,
+  "diagnoses": null
+}

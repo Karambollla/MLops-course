@@ -1,0 +1,10 @@
+name: task-ansible-idempotency
+services:
+  controller:
+    build: ../../../../labs/ansible
+    working_dir: /lab
+    volumes:
+      - ./inventory.ini:/lab/inventory.ini:ro
+      - ./playbook.yaml:/lab/playbook.yaml:ro
+      - ../../../../work/ansible:/course-output
+    command: ansible-playbook -i inventory.ini playbook.yaml

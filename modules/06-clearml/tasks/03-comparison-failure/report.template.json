@@ -1,0 +1,13 @@
+{
+  "mode": null,
+  "mlflow_run_id": null,
+  "clearml_task_id": null,
+  "data_sha256": null,
+  "mlflow_mae": null,
+  "clearml_mae": null,
+  "parameters_equal": null,
+  "artifacts_equal": null,
+  "failure": null,
+  "ownership": null,
+  "maintenance_tradeoffs": null
+}

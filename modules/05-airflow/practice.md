@@ -2,6 +2,26 @@
 
 [Теория](README.md) · [Подсказки](hints.md)
 
+## Задания
+
+Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+
+| Задание | Основной файл | Платформа |
+|---|---|---|
+| [DAG без подмены обучения](tasks/01-pipeline/README.md) | [Заготовка](tasks/01-pipeline/solution.py) · [тесты](tasks/01-pipeline/test_task.py) | cpu |
+| [Gate и повтор](tasks/02-gate-retry/README.md) | [Заготовка](tasks/02-gate-retry/solution.py) · [тесты](tasks/02-gate-retry/test_task.py) | cpu |
+| [Сбой и интервалы](tasks/03-failure-intervals/README.md) | [Заготовка](tasks/03-failure-intervals/solution.py) · [тесты](tasks/03-failure-intervals/test_task.py) | cpu |
+
+## Как запускать
+
+Все команды выполняются из корня курса после SETUP:
+
+```bash
+make task TASK=05-airflow/01-pipeline
+```
+
+Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
+
 ## Подготовка
 
 ```bash
@@ -10,36 +30,6 @@ docker compose -f labs/airflow/compose.yaml logs --tail=80
 ```
 
 UI: `http://localhost:8080`. Учётные данные standalone появляются в логах и файле конфигурации auth manager внутри volume; это отдельный локальный стенд. Не используй инструкцию `airflow users create` из старых курсов без проверки Airflow 3.
-
-## Задание 1. DAG без подмены обучения
-
-В `labs/airflow/dags/housing_pipeline.py` реализуй task `train_evaluate`. Рабочие данные внутри контейнера доступны в `/work`; пакет housing уже установлен из исходников при сборке. Создай результат в `/work/runs/RUN_KEY`, передай через XCom только путь и run_key. До реализации task ожидаемо падает.
-
-```bash
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags list-import-errors
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags unpause housing_pipeline
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags trigger housing_pipeline
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags list-runs housing_pipeline
-```
-
-Новый DAG по умолчанию paused. Команда unpause разрешает scheduler запускать задачи; trigger без неё может оставить run в queued. После trigger повтори list-runs через несколько секунд и проверь переход в running, затем success после реализации или ожидаемый failed с учебным исключением до неё. Пустая таблица означает, что run не создан или выбран другой DAG.
-
-У учебной task задан `retries=1`; стандартная пауза перед повтором составляет пять минут. Поэтому после первого NotImplementedError можно увидеть `up_for_retry`, пока DAG run ещё running. Смотри состояние и логи конкретной task, а не только общий статус DAG.
-
-## Задание 2. Gate и повтор
-
-Gate читает candidate.test.mae и baseline.test.mae из metrics.json. При отношении больше 0,9 публикация блокируется. Publish сохраняет release manifest с точным путём и версией модели. Запусти один run_key дважды: итоговая опубликованная версия и число смысловых результатов должны остаться прежними.
-
-## Задание 3. Сбой и интервалы
-
-Временно вызови исключение перед publish, повтори только упавший шаг и проверь отсутствие дубликата. Затем добавь ежедневное расписание, передавай интервал в манифест и объясни catchup/backfill на примере двух прошлых дат. Не запускай массовый backfill на ноутбуке.
-
-## Критерии готовности
-
-- [ ] Нет import errors, реальные задачи обучения и оценки завершаются.
-- [ ] Плохая модель не публикуется; XCom содержит только метаданные.
-- [ ] Retry не создаёт вторую публикацию того же результата.
-- [ ] Путь восстановления после искусственного сбоя воспроизводим.
 
 ## Завершение
 

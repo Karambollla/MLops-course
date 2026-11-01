@@ -1,0 +1,10 @@
+{
+  "container_name": null,
+  "deleted_container_id": null,
+  "before_id": null,
+  "restored_id": null,
+  "configuration_changed": null,
+  "drift_plan": null,
+  "after_plan": null,
+  "http_status": null
+}

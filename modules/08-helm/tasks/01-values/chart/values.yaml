@@ -1,0 +1,9 @@
+replicaCount: 1
+image:
+  repository: housing
+  tag: course
+  pullPolicy: Never
+modelPath: /models/model.joblib
+resources:
+  requests: {cpu: 100m, memory: 128Mi}
+  limits: {cpu: "1", memory: 768Mi}

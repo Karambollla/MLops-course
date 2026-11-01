@@ -1,0 +1,20 @@
+{
+  "use_case": "private_artifact",
+  "secret_needed": true,
+  "auth_method": "kubernetes",
+  "pod_uses_root": false,
+  "identity": {
+    "namespace": "housing",
+    "service_account": "housing-api",
+    "role": "housing-read"
+  },
+  "policy_path": "secret/data/housing",
+  "capabilities": [
+    "read"
+  ],
+  "ttl_seconds": 60,
+  "on_expiry": "unready",
+  "rotation": "reload_on_renewal",
+  "secret_zero": "service_account_jwt",
+  "kv_is_dynamic": false
+}

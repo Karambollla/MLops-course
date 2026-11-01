@@ -1,0 +1,36 @@
+{
+  "terraform_version": "1.11.4",
+  "provider_version": "3.0.2",
+  "network_mode": "bridge",
+  "docker_host_unchanged": true,
+  "endpoint": "http://127.0.0.1:8099",
+  "http_status": 200,
+  "repeat_plan": {
+    "resource_changes": [
+      {
+        "address": "docker_container.web",
+        "change": {
+          "actions": [
+            "no-op"
+          ]
+        }
+      }
+    ]
+  },
+  "port_plan": {
+    "resource_changes": [
+      {
+        "address": "docker_container.web",
+        "change": {
+          "actions": [
+            "delete",
+            "create"
+          ]
+        }
+      }
+    ]
+  },
+  "old_port": 8099,
+  "new_port": 8100,
+  "explanation": "replacement"
+}

@@ -2,6 +2,25 @@
 
 [Теория](README.md) · [Подсказки](hints.md)
 
+## Задания
+
+Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+
+| Задание | Основной файл | Платформа |
+|---|---|---|
+| [Values](tasks/01-values/README.md) | [Заготовка](tasks/01-values/report.json) · [тесты](tasks/01-values/test_task.py) | cpu |
+| [Неудачный релиз](tasks/02-rollback/README.md) | [Заготовка](tasks/02-rollback/report.json) · [тесты](tasks/02-rollback/test_task.py) | cpu |
+
+## Как запускать
+
+Все команды выполняются из корня курса после SETUP:
+
+```bash
+make task TASK=08-helm/01-values
+```
+
+Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
+
 ## Подготовка и установка
 
 Сначала удали ручной Deployment/Service модуля 07. Image housing:v1 должен быть загружен в kind.
@@ -13,26 +32,6 @@ helm --kube-context kind-mlops-course upgrade --install housing labs/helm/housin
 ```
 
 Проверь release status и `/predict` через port-forward. Не используй базовый image `course` для успешной установки с readiness: в нём нет модели.
-
-## Задание 1. Values
-
-Создай values-dev.yaml с одной репликой и явными ресурсами. Добавь обычную конфигурацию через ConfigMap и checksum-аннотацию. Сравни рендер до/после изменения параметра. Артефакт: chart, values и маленький diff ожидаемого YAML.
-
-## Задание 2. Неудачный релиз
-
-```bash
-helm --kube-context kind-mlops-course upgrade housing labs/helm/housing --set image.tag=missing --atomic --timeout 60s
-helm --kube-context kind-mlops-course history housing
-```
-
-Первая команда должна завершиться ошибкой и восстановить рабочую поставку. Подтверди прогноз и версию модели. Затем подготовь другой реальный bundle/image v2, выпусти и верни предыдущую ревизию через `helm rollback housing REVISION --wait` с явным kube-context.
-
-## Критерии готовности
-
-- [ ] Chart проходит lint и даёт читаемый рендер.
-- [ ] Поставку можно повторить из сохранённых values.
-- [ ] После неудачного upgrade доступны прогнозы прежней модели.
-- [ ] Объяснены границы --atomic и различия chart/app/model version.
 
 ## Завершение
 

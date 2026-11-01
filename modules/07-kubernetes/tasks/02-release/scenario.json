@@ -1,0 +1,21 @@
+{
+  "release_id": "deployment/housing:2",
+  "image": "housing:v1",
+  "image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "ready_replicas": 1,
+  "desired_replicas": 1,
+  "predict_status": 200,
+  "model_version": "housing-run-42",
+  "expected_model_version": "housing-run-42",
+  "service_ready_endpoints": 1,
+  "configmap": {
+    "LOG_LEVEL": "info"
+  },
+  "pod_env": {
+    "LOG_LEVEL": "info"
+  },
+  "config_revision": "2",
+  "pod_config_revision": "2",
+  "memory_request_mib": 128,
+  "memory_limit_mib": 768
+}

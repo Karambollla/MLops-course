@@ -11,7 +11,7 @@ services:
       AIRFLOW__CORE__PARALLELISM: "2"
     volumes:
       - airflow-home:/opt/airflow
-      - ./dags:/opt/airflow/dags:ro
+      - ../../modules/05-airflow/tasks/01-pipeline/housing_pipeline.py:/opt/airflow/dags/housing_pipeline.py:ro
       - ../../work:/work
     mem_limit: 4g
 volumes:

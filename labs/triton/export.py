@@ -1,9 +1,10 @@
-"""Упражнение 15: экспорт собственного Pipeline и parity с ONNX Runtime."""
-from pathlib import Path
-import joblib
-from skl2onnx import convert_sklearn
-from skl2onnx.common.data_types import FloatTensorType
-bundle = joblib.load("work/artifacts/model.joblib")
-# TODO(student): convert with FloatTensorType([None, 8]), target_opset=17,
-# save model.onnx in labs/triton/model_repository/housing/1 and verify parity.
-raise NotImplementedError("Реализуй экспорт и проверку численного совпадения")
+"""Совместимый вход; учебная реализация: modules/15-triton/tasks/01-onnx/solution.py."""
+from course_tasks import load_task
+
+
+def main() -> None:
+    return load_task("15-triton/01-onnx").main()
+
+
+if __name__ == "__main__":
+    main()

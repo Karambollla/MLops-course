@@ -1,0 +1,15 @@
+{
+  "state_addresses": null,
+  "state_container_id": null,
+  "observed_container_id": null,
+  "terraform_version": null,
+  "provider_version": null,
+  "tracked_in_git": null,
+  "state_may_contain_secrets": null,
+  "sensitive_encrypts_state": null,
+  "lost_state_plan_actions": null,
+  "import_address": null,
+  "import_id": null,
+  "team_backend": null,
+  "roles": null
+}

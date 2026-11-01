@@ -1,0 +1,29 @@
+{
+  "stopped_at": 100,
+  "pending_at": 110,
+  "firing_at": 145,
+  "restarted_at": 160,
+  "resolved_at": 180,
+  "for_seconds": 30,
+  "alert": "HousingTargetDown",
+  "states": [
+    "inactive",
+    "pending",
+    "firing",
+    "inactive"
+  ],
+  "down_up": 0,
+  "recovered_up": 1,
+  "no_model": {
+    "up": 1,
+    "ready_status": 503,
+    "predict_status": 503
+  },
+  "additional_alert": "model_readiness_or_predict_5xx",
+  "runbook": {
+    "symptom": "target down",
+    "check": "targets and api logs",
+    "recovery": "restart api with model",
+    "success": "up=1, ready=200, predict=200"
+  }
+}

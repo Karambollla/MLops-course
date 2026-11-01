@@ -1,0 +1,44 @@
+{
+  "targets": [
+    {
+      "id": "a",
+      "target": 1.0
+    },
+    {
+      "id": "b",
+      "target": 3.0
+    },
+    {
+      "id": "c",
+      "target": 5.0
+    }
+  ],
+  "predictions": [
+    {
+      "id": "c",
+      "prediction": 4.0
+    },
+    {
+      "id": "a",
+      "prediction": 2.0
+    },
+    {
+      "id": "b",
+      "prediction": 3.0
+    }
+  ],
+  "reference_medinc": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "shifted_medinc": [
+    3,
+    4,
+    5,
+    6,
+    7
+  ]
+}

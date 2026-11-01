@@ -1,35 +1,21 @@
-"""Упражнения 01–02.
+"""Совместимый CLI: реализация находится в modules/01-ml/tasks/02-candidate/solution.py."""
 
-CLI обязан создать model.joblib, metrics.json, manifest.json, split.json.
-Bundle: {schema_version: 1, pipeline: fitted estimator, features: FEATURES,
-         model_version: nonempty str}.
-metrics.json: baseline и candidate, у каждого validation/test с mae/rmse.
-manifest.json: seed, data_sha256, versions, parameters, feature_order, split.
-split.json: train/validation/test со списками исходных индексов строк.
-Pipeline принимает DataFrame с восемью столбцами; target в него не входит.
-"""
-import argparse
 from pathlib import Path
+
 from sklearn.pipeline import Pipeline
+from course_tasks import load_task
 
 
 def build_pipeline(seed: int = 42) -> Pipeline:
-    # TODO(student): выбери preprocessing и estimator из модуля 01.
-    raise NotImplementedError("Создай sklearn Pipeline")
+    return load_task("01-ml/02-candidate").build_pipeline(seed)
 
 
 def train(data: Path, output: Path, seed: int) -> None:
-    # TODO(student): split, baseline, evaluation, bundle, atomic publication.
-    raise NotImplementedError("Реализуй цикл обучения и сохранение артефактов")
+    return load_task("01-ml/02-candidate").train(data, output, seed)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--seed", type=int, default=42)
-    args = parser.parse_args()
-    train(args.data, args.output, args.seed)
+    return load_task("01-ml/02-candidate").main()
 
 
 if __name__ == "__main__":

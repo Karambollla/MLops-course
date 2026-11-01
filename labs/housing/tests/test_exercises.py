@@ -1,9 +1,13 @@
 """Opt in with RUN_EXERCISES=1 after reading practice instructions."""
+
 import os
+
 import numpy as np
 import pandas as pd
 import pytest
+from housing.evaluate import regression_metrics
 from housing.features import FEATURES
+from housing.train import build_pipeline
 
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_EXERCISES") != "1",
@@ -12,7 +16,6 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_training_pipeline_predicts_and_preserves_feature_order():
-    from housing.train import build_pipeline
     # Small fixture for the interface; full quality is measured on California Housing.
     rng = np.random.default_rng(42)
     x = pd.DataFrame(rng.normal(size=(40, len(FEATURES))), columns=FEATURES)
@@ -25,7 +28,6 @@ def test_training_pipeline_predicts_and_preserves_feature_order():
 
 
 def test_evaluation_has_correct_units():
-    from housing.evaluate import regression_metrics
     metrics = regression_metrics(np.array([1.0, 3.0]), np.array([1.0, 1.0]))
     assert metrics["mae"] == pytest.approx(1.0)
-    assert metrics["rmse"] == pytest.approx(2 ** 0.5)
+    assert metrics["rmse"] == pytest.approx(2**0.5)

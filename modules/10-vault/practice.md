@@ -2,6 +2,26 @@
 
 [Теория](README.md) · [Подсказки](hints.md)
 
+## Задания
+
+Каждая папка содержит условие, редактируемую заготовку и собственные тесты. Начинай с README нужной задачи.
+
+| Задание | Основной файл | Платформа |
+|---|---|---|
+| [Минимальные права](tasks/01-policy/README.md) | [Заготовка](tasks/01-policy/solution.py) · [тесты](tasks/01-policy/test_task.py) | cpu |
+| [Истечение](tasks/02-expiry/README.md) | [Заготовка](tasks/02-expiry/solution.py) · [тесты](tasks/02-expiry/test_task.py) | cpu |
+| [Интеграционное решение](tasks/03-integration/README.md) | [Заготовка](tasks/03-integration/report.json) · [тесты](tasks/03-integration/test_task.py) | cpu |
+
+## Как запускать
+
+Все команды выполняются из корня курса после SETUP:
+
+```bash
+make task TASK=10-vault/01-policy
+```
+
+Подставь идентификатор выбранной задачи из её README. Незаполненная заготовка ожидаемо даёт RED. `make test` проверяет готовые компоненты и инструменты курса; задания проверяются отдельно. Для отчётных задач заполняй указанный JSON/Markdown и выполняй ручную рубрику: тест схемы не подтверждает истинность наблюдений.
+
 ## Подготовка
 
 ```bash
@@ -23,24 +43,6 @@ docker compose -f labs/vault/compose.yaml cp labs/vault/policy.hcl vault:/tmp/po
 docker compose -f labs/vault/compose.yaml exec -e VAULT_TOKEN=course-root vault vault policy write housing /tmp/policy.hcl
 docker compose -f labs/vault/compose.yaml exec -e VAULT_TOKEN=course-root vault vault token create -policy=housing -ttl=60s -renewable=false
 ```
-
-## Задание 1. Минимальные права
-
-Передай выданный token в `VAULT_TOKEN` своего терминала, `VAULT_ADDR=http://127.0.0.1:8200`. Доработай `labs/vault/read_secret.py`: подтвердить наличие нужного ключа без печати значения. Чтение housing успешно; чтение другого пути и запись с этим token запрещены. Сохрани только HTTP-коды и маскированный отчёт.
-
-## Задание 2. Истечение
-
-Через 60 секунд повтори запрос: ожидается 403. Обработай отказ отдельно от сетевого timeout; исключи бесконечный retry. Дополнительно выдай renewable token и исследуй renew/revoke, сохраняя ограниченную policy.
-
-## Задание 3. Интеграционное решение
-
-Опиши, где именно housing-сервису действительно нужен секрет: скачивание приватного артефакта или внешняя зависимость. Для локального read-only файла токен не нужен. Спроектируй Kubernetes auth без внедрения root token в Pod.
-
-## Критерии готовности
-
-- [ ] Позитивный и два отрицательных сценария проверены.
-- [ ] Истечение доступа обнаруживается и не превращается в бесконечный retry.
-- [ ] Объяснены secret zero, TTL, policy и отличие KV от dynamic secrets.
 
 ## Завершение
 
