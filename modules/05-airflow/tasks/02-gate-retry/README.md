@@ -49,3 +49,28 @@ Gate читает candidate.test.mae и baseline.test.mae из metrics.json. П�
 ## Пример корректного результата
 
 При baseline MAE=1.0 и candidate MAE=0.9 gate возвращает true, при 0.90001 — false. Два publish с тем же run_key и версией оставляют один release-файл. Конфликт версии вызывает ValueError; провал gate не создаёт release.
+
+## Обязательный опыт в Airflow
+
+После подключения к телам заготовок `gate`/`publish` из `housing_pipeline.py`
+выполни DAG настоящим Airflow 3.1.0. Быстрый тест с подменой `subprocess.run`
+проверяет только CLI-обвязку и не засчитывается за этот опыт.
+
+Критерии: конкретные task instances validate/train/gate/publish видны в UI;
+XCom train содержит только `path` и `run_key`; скачанный/прочитанный artifact
+существует и соответствует этому run_key; плохой gate не оставляет release;
+повтор одного run_key после injected failure даёт один manifest с той же точной
+version. Сравни файл/число release до и после retry, а также task ID, DAG run ID,
+attempt и исходный artifact path в реальных логах. В UI повторяй только свой
+упавший publish, сохраняя успешные upstream tasks. Общий зелёный статус DAG и
+mock-объект task instance этого не доказывают.
+
+## Проверка фактического состояния DAG
+
+После завершения собственного запуска укажи его настоящий run ID:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 AIRFLOW_ACCEPTANCE_RUN_ID='свой-run-id' AIRFLOW_EXPECT_GATE=pass python scripts/run_task.py test 05-airflow/02-gate-retry -- -m integration
+```
+
+Тест только читает task instances через локальный Airflow контейнер и проверяет состояния `validate_data`, `train_evaluate`, `gate`, `publish`. Для отдельного запуска с плохой моделью задай `AIRFLOW_EXPECT_GATE=reject`: publish должен оказаться skipped/upstream_failed. Для опыта с повтором публикации укажи успешный run и `AIRFLOW_MIN_PUBLISH_ATTEMPTS=2`; проверь также прежний run_key и один release на диске. Подготовку сбоя и retry выполняешь ты; тест не запускает и не очищает DAG.

@@ -131,3 +131,18 @@ Compose монтирует сам DAG read-only, поэтому правка `ho
 - [Airflow Docker 3.1.0](https://airflow.apache.org/docs/apache-airflow/3.1.0/howto/docker-compose/index.html) — требования к Docker, память и границы учебного стенда.
 - [Airflow tutorials](https://airflow.apache.org/docs/apache-airflow/3.1.0/tutorial/index.html) — TaskFlow и устройство DAG.
 - [Airflow best practices](https://airflow.apache.org/docs/apache-airflow/3.1.0/best-practices.html) — идемпотентность, top-level code и передача данных.
+
+## Практическая приёмка настоящего DAG
+
+Заготовка уже использует `airflow.sdk` и отдельные task wrappers gate/publish,
+но их действия, daily timetable и interval wiring реализует ученик. Проверка
+`DagBag` внутри работающего контейнера включается явно из
+[темы 01](tasks/01-pipeline/README.md#настоящий-sdk-и-загрузка-dag).
+Она доказывает импорт, а fake subprocess unit-тест — только CLI-обвязку.
+
+Обязателен настоящий запуск: task instances и XCom `{path, run_key}`, реальные
+model/metrics/release, блокировка плохого gate, retry одного упавшего publish
+без нового результата и два прошлых суточных UTC интервала в manifest. Критерии
+перечислены в темах [02](tasks/02-gate-retry/README.md#обязательный-опыт-в-airflow)
+и [03](tasks/03-failure-intervals/README.md#приёмка-расписания-настоящим-sdk).
+Mock task, тест функции или зелёный import DAG не засчитываются как этот опыт.

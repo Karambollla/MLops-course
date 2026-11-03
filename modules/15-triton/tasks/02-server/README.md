@@ -1,43 +1,33 @@
-# Triton: запрос и готовность модели
+# Triton HTTP SDK: запрос, readiness и численная проверка
 
-[Теория](../../README.md) · [Практика модуля](../../practice.md) · [Подсказки](../../hints.md)
+[Теория](../../README.md) · [Практика](../../practice.md) · [Подсказки](../../hints.md)
 
-## Почему readiness недостаточно
+Табличный housing Pipeline экспортируется в ONNX заданием 01. Здесь клиент отправляет float32 tensor серверу и получает прогнозы по именам outputs. Это Triton Inference Server HTTP V2 для ONNX, без LLM API. Readiness сервера ещё не доказывает готовность модели или правильность прогноза.
 
-Сервер может принимать HTTP, пока нужная модель не загрузилась. Даже готовая модель может получать неверно сформированный tensor. Здесь нужно собрать запрос HTTP V2 и проверить ответ на тех же входах, что локальный ONNX Runtime. Разбор [batch dimension](../../README.md#разбор-config-и-batch-dimension) и [готовности](../../README.md#http-v2-и-готовность) объясняет эти разные границы.
+Сохрани чистую `inference_request(rows,feature_order,max_batch=32)`: она использует `feature_matrix` из `15-triton/01-onnx` и возвращает JSON inputs с `name=features`, `datatype=FP32`, `shape=[N,F]`, плоскими построчными data. Для `[{"b":2,"a":1},{"a":3,"b":4}]`, порядка `["a","b"]` это shape `[2,2]` и data `[1,2,3,4]`. Пустой batch, N>max_batch и неверные признаки вызывают ValueError.
 
-Уже должны быть реализованы `feature_matrix` и ONNX-export предыдущего задания. Запусти его `export.py`: Compose читает только `work/triton/model_repository/housing/config.pbtxt` и `1/model.onnx`, а не файлы в каталоге задания. Предоставлены `solution.py` и `request.template.json`. Шаблон с null/пустым data не является отправляемым запросом.
+Реализуй `infer(client,rows,feature_order,model_name="housing",output_names=("variable",),max_batch=32) -> dict[str,np.ndarray]`. Используй настоящие `tritonclient.http.InferInput`, `set_data_from_numpy` (FP32, binary transport), `InferRequestedOutput`, `client.infer` и `result.as_numpy(name)`. Матрица признаков общая с заданием 01; не меняй порядок столбцов. Верни каждый запрошенный output по имени, с конечными числами и реальной формой модели; отсутствующий output или некорректный результат — ValueError. SDK/сеть не заменяются выдуманными прогнозами.
 
-Чистое формирование JSON проверяется на локальном CPU в [основном окружении](../../../../SETUP.md). Реальный сервер — дополнительный Linux x86_64 CPU-стенд образа 25.06-py3 с `KIND_CPU`; GPU не используется. Совместимость образа с ARM64 не предполагается.
-
-## Технический контракт
-
-Реализуй `inference_request(rows,feature_order,max_batch=32) -> dict`, используя `feature_matrix` из `15-triton/01-onnx` через `load_task`. Результат содержит `inputs` с одним объектом: `name:"features"`, `datatype:"FP32"`, `shape:[N,F]`, `data` — плоский список чисел построчно после преобразования к float32. Пустой batch или N>max_batch вызывает ValueError; ошибки признаков не должны скрываться.
-
-Для rows=`[{"b":2,"a":1},{"a":3,"b":4}]` и feature_order=`["a","b"]` корректны shape=`[2,2]`, data=`[1.0,2.0,3.0,4.0]`. Это пример универсальной функции, а housing-запрос использует F=8. Объём данных должен равняться произведению размеров shape. Batch-ось входит в shape запроса, но не в dims `[8]` config при max_batch_size>0.
-
-## Проверить сервер и inference
-
-Из корня курса на совместимом стенде:
-
-```bash
-docker compose -f labs/triton/compose.yaml up -d
-curl --fail -i http://127.0.0.1:8000/v2/health/ready
-curl --fail -i http://127.0.0.1:8000/v2/models/housing/ready
-curl --fail http://127.0.0.1:8000/v2/models/housing
-```
-
-Первый endpoint проверяет сервер, второй — модель, третий показывает metadata. Отправь результат своей функции с реальной строкой восьми признаков в `/v2/models/housing/infer`. Ожидаются именованные выходы с конечными числами и теми shapes, которые описаны ONNX. Правильного универсального прогноза нет: он зависит от твоего Pipeline.
+CLI уже читает JSON-список строк, создаёт `InferenceServerClient`, вызывает student stub и печатает структурированный JSON: model, затем outputs с name/shape/datatype/data. Адрес берётся из `TRITON_URL` или `--url` (схема http(s) преобразуется в host:port для SDK). `--features`/`--outputs` позволяют сверить фактические имена; по умолчанию восемь канонических housing features и variable.
 
 ```bash
 make task TASK=15-triton/02-server
+MLOPS_RUN_SDK=1 make task TASK=15-triton/02-server
+python scripts/run_task.py run 15-triton/02-server --rows work/triton/rows.json
+```
+
+rows.json содержит реальные housing строки без target. SDK устанавливается отдельно из `labs/triton/client-requirements.txt`, ONNX/ORT — из `labs/triton/requirements.txt`; порядок окружений и ограничения платформы — в практике. `sdk`-тест вызывает твою `infer` с настоящими SDK tensor/result types и крошечным синтетическим табличным ONNX, исполняемым настоящим ORT. Подменена только граница transport; это не Triton server и не доказательство сетевого inference. Базовая коллекция работает без SDK; незаполненные функции остаются NotImplementedError.
+
+На совместимом стенде после экспорта собственного ONNX:
+
+```bash
+python modules/15-triton/tasks/01-onnx/export.py
+docker compose -f labs/triton/compose.yaml up -d
+curl --fail -i http://127.0.0.1:8000/v2/health/ready
+curl --fail -i http://127.0.0.1:8000/v2/models/housing/ready
 MLOPS_RUN_INTEGRATION=1 TRITON_URL=http://127.0.0.1:8000 make task TASK=15-triton/02-server
 ```
 
-Первая команда вызывает функцию тестами, CLI нет. Вторая проверяет readiness, отправляет реальный inference и сравнивает все outputs по имени с локальным ONNX Runtime на тех же FP32-входах при rtol=1e-4/atol=1e-5. Нужны Runtime и тот же файл `work/triton/model_repository/housing/1/model.onnx`, который загружен сервером; иной путь задаёт `TRITON_ONNX_PATH`.
+Старый read-only HTTP probe сохранён; новый live-тест дополнительно вызывает твою `infer` через реальный SDK client, сверяет имена/формы/конечность и все outputs с локальным ORT при rtol=1e-4/atol=1e-5. Нужен тот же ONNX, который читает сервер: `work/triton/model_repository/housing/1/model.onnx`, либо `TRITON_ONNX_PATH`. Тесты не разворачивают сервис и не создают model repository. Отсутствие SDK/runtime/модели/сервера при opt-in — ошибка, без opt-in live probes пропущены.
 
-Probe ничего не скачивает, не экспортирует и не разворачивает. Без opt-in он пропущен, с opt-in отсутствие файла/runtime/сервера — ошибка. Если readiness не проходит, проверь logs и repository; если не совпали числа — сначала hash реально загруженного ONNX и входы. [Диагностика](../../README.md#платформы-и-диагностика) разделяет ошибки загрузки и неверные прогнозы.
-
-## Завершение
-
-Сохрани проверенный комплект модели и metadata, затем выполни `docker compose -f labs/triton/compose.yaml down`. Реальный успешный запрос подтверждает этот контракт; он ещё не является сравнением производительности.
+После проверки сохрани ONNX/hash/manifest вне Git и останови `docker compose -f labs/triton/compose.yaml down`.

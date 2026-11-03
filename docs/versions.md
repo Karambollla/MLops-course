@@ -11,7 +11,7 @@
 | ipykernel / Matplotlib | 6.29.5 / 3.10.3 | Первая ячейка ML-notebook, интерактивное ядро и графики |
 | MLflow / SQLAlchemy | 3.1.1 / 2.0.41 | SDK и server; SQLAlchemy 2.1 несовместим с этим MLflow |
 | ClearML Server / Agent | 1.16.1 / 1.9.3 | Server Linux x86_64; Agent в собственном venv |
-| DVC / ClearML SDK | 3.59.2 / 1.18.0 | Отдельные окружения |
+| DVC / ClearML SDK | 3.59.2 / 1.18.0 | Отдельные окружения; для DVC pathspec==0.12.1 |
 | Airflow | 3.1.0-python3.12 | Standalone image; учебный SQLite |
 | kind / Kubernetes node / Helm | 0.27.0 / 1.32.2 / 3.17.3 | Локальный кластер |
 | Prometheus / Grafana | 3.2.1 / 11.6.0 | Compose |
@@ -20,6 +20,9 @@
 | Ansible core | 2.18.4 | Контроллер внутри Python Docker-образа |
 | Qdrant / Python client | 1.13.6 / 1.13.3 | Локальная небольшая коллекция |
 | Elasticsearch / OpenSearch | 8.17.3 / 2.19.1 | Раздельные CPU-стенды |
+| elasticsearch / opensearch-py | 8.17.2 / 2.8.0 | Настоящие Python-клиенты, labs/search/requirements.txt |
+| hvac | 2.3.0 | Vault KV v2/token SDK, labs/vault/requirements.txt |
+| tritonclient[http] | 2.59.0 | Отдельное клиентское окружение; импорт HTTP клиента проверен на ARM64 |
 | ONNX / skl2onnx / ONNX Runtime | 1.17.0 / 1.18.0 / 1.22.0 | Экспорт в отдельном окружении |
 | Triton / TensorRT-LLM image | 25.06-py3 / 25.06-trtllm-python-py3 | Дополнительный Linux/NVIDIA стенд |
 | vLLM / SGLang image | v0.10.2 / v0.4.10.post2-cu126 | Дополнительный Linux/NVIDIA стенд |

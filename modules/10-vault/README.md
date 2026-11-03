@@ -14,7 +14,7 @@ Housing API из предыдущих модулей читает публичн
 
 `labs/vault/compose.yaml` запускает локальный dev server на `127.0.0.1:8200`. Привязка порта к loopback означает доступ с этого компьютера. Внутри контейнера Vault слушает другой адрес — `0.0.0.0:8200`. Учебный root token `course-root` нужен для создания данных и политики. Клиент упражнений должен использовать отдельный application token с меньшими правами.
 
-`tasks/01-policy/solution.py` уже читает `VAULT_ADDR`, берёт `VAULT_TOKEN` из окружения, делает GET с таймаутом 5 секунд и передаёт JSON в `inspect_payload`. Заготовка функции выбрасывает `NotImplementedError`: до реализации клиента нельзя считать работающей интеграцией. Во втором задании отдельная функция классифицирует исходы, не выполняя HTTP-запрос и не создавая токены.
+`tasks/01-policy/solution.py` создаёт настоящий `hvac.Client` из `VAULT_ADDR`/`VAULT_TOKEN` с timeout 5 секунд. Ты реализуешь `read_secret(client,path,mount_point)` через SDK KV v2 и `inspect_payload`, возвращающую только наличие поля. Во втором задании сохраняется чистая `classify_error` и добавлены SDK-заготовки `renew_token`/`revoke_token` для собственного временного token. Все student-функции оставлены с `NotImplementedError`: CLI-обвязка сама по себе ещё не является работающей интеграцией. Необязательная зависимость `hvac==2.3.0` устанавливается из `labs/vault/requirements.txt`.
 
 ## Кто удостоверяет клиента и кто разрешает чтение
 
@@ -91,3 +91,5 @@ Dev server хранит состояние в памяти, автоматиче
 - [KV v2](https://developer.hashicorp.com/vault/docs/v1.19.x/secrets/kv/kv-v2) — версии статических значений и различие data/metadata.
 - [Политики Vault 1.19](https://developer.hashicorp.com/vault/docs/v1.19.x/concepts/policies) — пути и capabilities.
 - [Kubernetes auth 1.19](https://developer.hashicorp.com/vault/docs/v1.19.x/auth/kubernetes) — service account, role и выдача token; это архитектурное продолжение локальной практики.
+
+SDK [hvac KV v2 2.3.0](https://python-hvac.org/en/v2.3.0/usage/secrets_engines/kv_v2.html) принимает mount и логический path раздельно. Python-клиент не отменяет policy сервера: 403 проявляется как `hvac.exceptions.Forbidden`, timeout — как `requests.exceptions.Timeout`. Быстрые tests проверяют контракт, `MLOPS_RUN_SDK=1` включает реальный SDK без сети, `MLOPS_RUN_INTEGRATION=1` — чтение существующего стенда твоей функцией. Создание/renew/revoke собственных временных token в tests требует дополнительно `MLOPS_RUN_WRITES=1`; подробные команды и очистка — в [практике](practice.md).

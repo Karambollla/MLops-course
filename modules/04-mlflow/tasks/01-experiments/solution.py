@@ -32,13 +32,19 @@ def select_candidate(runs: list[dict]) -> str:
     raise NotImplementedError("Выбери run")
 
 
-def track_experiments(data: Path, output: Path, tracking_uri: str) -> list[dict]:
+def track_experiments(
+    data: Path,
+    output: Path,
+    tracking_uri: str,
+    *,
+    experiment_name: str = "housing-course",
+) -> list[dict]:
     """Train three configurations and record their actual results with the SDK."""
     if mlflow is None:
         raise RuntimeError(
             "Install MLflow SDK: python -m pip install -r labs/mlflow/requirements.txt"
         )
-    # TODO: set_tracking_uri / set_experiment выбирают сервер и группу запусков.
+    # TODO: set_tracking_uri / set_experiment(experiment_name) выбирают сервер и группу.
     # Для каждой конфигурации: start_run, своё обучение, log_params,
     # log_metrics и log_artifacts; значения берутся из настоящих результатов.
     # Пример этих SDK-вызовов: ../../README.md, «Самостоятельный пример учёта».

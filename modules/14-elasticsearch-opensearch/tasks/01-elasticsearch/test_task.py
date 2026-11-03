@@ -1,9 +1,12 @@
+import copy
 import json
+from pathlib import Path
+from uuid import uuid4
 import os
 from urllib.request import Request, urlopen
 
 import pytest
-from course_tasks import load_solution
+from course_tasks import load_solution, load_task
 
 s = load_solution(__file__)
 DOCS = [
@@ -121,3 +124,90 @@ def test_bulk_failure_items_override_top_level_flag_and_include_all_failures():
     assert s.bulk_failures({"errors": False, "items": items}) == ["b", "c", "d"]
     assert s.bulk_failures({"errors": True, "items": [items[0]]}) == []
     assert s.bulk_failures({"errors": True, "items": []}) == []
+
+
+@pytest.mark.integration
+@pytest.mark.writes
+@pytest.mark.skipif(
+    os.getenv("MLOPS_RUN_INTEGRATION") != "1" or os.getenv("MLOPS_RUN_WRITES") != "1",
+    reason="Set both MLOPS_RUN_INTEGRATION=1 and MLOPS_RUN_WRITES=1",
+)
+def test_live_student_sdk_ingest_and_search_in_owned_index():
+    assert s.Elasticsearch is not None, "Install labs/search/requirements.txt"
+    client = s.Elasticsearch(os.environ["ELASTICSEARCH_URL"])
+    index = "mlops-test-elasticsearch-" + uuid4().hex
+    # Reserve the unique name before letting the student implementation touch it.
+    assert not client.indices.exists(index=index)
+    corpus = Path(__file__).resolve().parents[4] / "labs/search/corpus.json"
+    documents = json.loads(corpus.read_text(encoding="utf-8"))
+    mapping = json.loads(Path(__file__).with_name("mapping.json").read_text())
+    try:
+        s.ensure_index(client, index, mapping)
+        s.ensure_index(client, index, mapping)
+        assert s.ingest_documents(client, index, documents) == 8
+        assert s.ingest_documents(client, index, documents) == 8
+        assert client.count(index=index)["count"] == 8
+        actual_mapping = client.indices.get_mapping(index=index)[index]["mappings"]
+        expected_properties = mapping["mappings"]["properties"]
+        for field in ("text", "topic", "vector"):
+            for key, value in expected_properties[field].items():
+                actual = actual_mapping["properties"][field][key]
+                if isinstance(value, dict):
+                    assert all(
+                        actual[setting] == expected
+                        for setting, expected in value.items()
+                    )
+                else:
+                    assert actual == value
+        incompatible = copy.deepcopy(mapping)
+        vector_mapping = incompatible["mappings"]["properties"]["vector"]
+        vector_mapping["dims" if "dims" in vector_mapping else "dimension"] = 3
+        with pytest.raises(ValueError):
+            s.ensure_index(client, index, incompatible)
+        assert client.count(index=index)["count"] == 8
+        stored = client.search(
+            index=index, body={"size": 100, "query": {"match_all": {}}}
+        )
+        assert {int(hit["_id"]): hit["_source"] for hit in stored["hits"]["hits"]} == {
+            doc["id"]: {key: doc[key] for key in ("text", "topic", "vector")}
+            for doc in documents
+        }
+        lexical = s.lexical_search(client, index, "Vault", k=5)
+        assert 7 in [hit["id"] for hit in lexical]
+        vector = s.vector_search(client, index, [0, 0, 0, 1], k=2, topic="security")
+        assert {hit["id"] for hit in vector} == {7, 8}
+        assert all(hit["payload"]["topic"] == "security" for hit in vector)
+        assert all(isinstance(hit["score"], (float, int)) for hit in vector)
+        assert s.vector_search(client, index, [0, 0, 0, 1], k=2, topic="missing") == []
+        assert s.lexical_search(client, index, "Vault", topic="release") == []
+        with pytest.raises(ValueError):
+            s.vector_search(client, index, [1, 0], k=2)
+
+        metrics = load_task("13-qdrant/02-evaluation")
+        rrf = load_task("14-elasticsearch-opensearch/03-comparison")
+        lexical_ids = [hit["id"] for hit in lexical]
+        vector_ids = [hit["id"] for hit in vector]
+        fused = rrf.reciprocal_rank_fusion([lexical_ids, vector_ids])
+        assert {row["id"] for row in fused} == set(lexical_ids + vector_ids)
+        assert metrics.ranking_metrics(vector_ids, [7, 8], 2) == {
+            "recall": 1.0,
+            "precision": 1.0,
+            "mrr": 1.0,
+        }
+        assert (
+            metrics.ranking_metrics([row["id"] for row in fused], [7, 8], 2)["recall"]
+            == 1.0
+        )
+        invalid = {
+            "id": 900,
+            "text": {"invalid": "object"},
+            "topic": "security",
+            "vector": [0, 0, 0, 1],
+        }
+        with pytest.raises(ValueError, match="900"):
+            s.ingest_documents(client, index, [documents[0], invalid])
+        assert client.count(index=index)["count"] == 8
+    finally:
+        if client.indices.exists(index=index):
+            client.indices.delete(index=index)
+        client.close()

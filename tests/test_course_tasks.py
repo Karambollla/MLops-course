@@ -174,3 +174,12 @@ def test_runner_run_guide_points_to_material(course):
     result = invoke(course, "run", "00-demo/03-guide")
     assert result.returncode == 0, result.stderr
     assert str(folder / "README.md") in result.stdout
+
+
+def test_runner_collects_companion_checks_in_the_selected_task(course):
+    task = course / "modules/00-demo/tasks/01-first"
+    (task / "test_task.py").write_text("def test_fast():\n    assert True\n")
+    (task / "test_server.py").write_text("def test_server():\n    assert True\n")
+    result = invoke(course, "test", "00-demo/01-first", "--", "-q")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "2 passed" in result.stdout

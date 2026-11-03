@@ -25,7 +25,7 @@ python scripts/run_task.py run 00-python/02-jsonl-cli -- modules/00-python/tasks
 
 У задач без CLI runner пояснит, что нужно запустить тесты функций или стенда. Для руководств он покажет README и прямо сообщит, что автоматических проверок нет. Параметры CLI всегда передаются после `--`.
 
-`make test` проверяет готовую инфраструктуру тестирования и HTTP-обвязку. `make tasks-collect` собирает учебные тесты без выполнения. `make tasks` проверяет технические задания, исключая руководства. Незавершённые функции дают ошибки, интеграционные тесты без включения пропускаются. Успех общих проверок и пропуск стенда не означают выполнение практики.
+`make test` проверяет готовую инфраструктуру тестирования и HTTP-обвязку. `make tasks-collect` собирает учебные тесты без выполнения. `make task` собирает все `test_*.py` внутри выбранной темы, включая отдельные SDK/server-проверки. `make tasks` проверяет технические задания, исключая руководства. Незавершённые функции дают ошибки, интеграционные тесты без включения пропускаются. Успех общих проверок и пропуск стенда не означают выполнение практики.
 
 ## Результаты и перенос
 
@@ -82,15 +82,19 @@ except ModuleNotFoundError as exc:
 
 ### Локальные проверки SDK
 
-Часть заданий MLflow, Qdrant и ONNX содержит тесты с marker `sdk`. Они проверяют настоящие форматы и библиотеки без внешнего сервера: MLflow использует временные SQLite и каталог артефактов, Qdrant — in-memory коллекцию, ONNX Runtime — синтетическую модель. Эти тесты не скачивают модели и датасеты и не используют твой каталог `work/`.
+Часть заданий DVC, MLflow, ClearML, Vault, Qdrant, ONNX и Triton содержит тесты с marker `sdk`. Они проверяют настоящие форматы и библиотеки без внешнего сервера: MLflow использует временные SQLite и каталог артефактов, Qdrant — in-memory коллекцию, ONNX Runtime — синтетическую модель. Эти тесты не скачивают модели и датасеты и не используют твой каталог `work/`.
 
 По умолчанию SDK-проверки пропускаются. После реализации задания и его предшественников установи зависимости соответствующего модуля и включи проверки явно:
 
 ```bash
+MLOPS_RUN_SDK=1 python scripts/run_task.py test 02-reproducibility/01-data-version -- -m sdk
 MLOPS_RUN_SDK=1 python scripts/run_task.py test 04-mlflow/01-experiments -- -m sdk
 MLOPS_RUN_SDK=1 python scripts/run_task.py test 04-mlflow/02-registry -- -m sdk
+MLOPS_RUN_SDK=1 python scripts/run_task.py test 06-clearml/01-offline -- -m sdk
+MLOPS_RUN_SDK=1 python scripts/run_task.py test 10-vault/01-policy -- -m sdk
 MLOPS_RUN_SDK=1 python scripts/run_task.py test 13-qdrant/01-plumbing -- -m sdk
 MLOPS_RUN_SDK=1 python scripts/run_task.py test 15-triton/01-onnx -- -m sdk
+MLOPS_RUN_SDK=1 python scripts/run_task.py test 15-triton/02-server -- -m sdk
 ```
 
 Выполняй команды в соответствующих окружениях модулей. При включённом флаге отсутствие SDK приводит к понятной ошибке с инструкцией установки, а не к успешному результату или молчаливому пропуску. Незавершённая учебная функция остаётся ошибкой `NotImplementedError`.
@@ -99,8 +103,25 @@ MLOPS_RUN_SDK=1 python scripts/run_task.py test 15-triton/01-onnx -- -m sdk
 
 ### Проверки стендов
 
-Поведенческие тесты проверяют функции на небольших фиксированных данных, ошибки входа и конкретные результаты. Интеграционные тесты читают уже поднятый стенд только при `MLOPS_RUN_INTEGRATION=1`; тесты не разворачивают и не удаляют инфраструктуру.
+Поведенческие тесты проверяют функции на небольших фиксированных данных, ошибки входа и конкретные результаты. Проверки чтения используют уже поднятый стенд при `MLOPS_RUN_INTEGRATION=1`; они не разворачивают и не удаляют инфраструктуру. Отдельные тесты с marker `writes` вызывают реализацию учащегося и создают только собственные учебные индексы, коллекции, runs или child tokens. Для них одновременно нужны `MLOPS_RUN_INTEGRATION=1` и `MLOPS_RUN_WRITES=1`. Уникальные имена отделяют их от результатов твоих ручных опытов; cleanup относится только к созданным ресурсам. Нагрузка housing также требует writes-флаг, поскольку изменяет счётчики настоящими запросами.
 
 Флаги `MLOPS_RUN_SDK` и `MLOPS_RUN_INTEGRATION` независимы: локальная SDK-проверка не подтверждает запуск Docker, Kubernetes или GPU-serving.
 
 Для действий, которые неудобно надёжно автоматизировать, README содержит команды и пример ожидаемого вывода или инвариантов. Примеры показывают форму результата и не выдают вымышленные измерения за реальный запуск. Материалы интервью и резюме — рекомендации без обязательных ответов и формальных тестов.
+
+## Приёмка практики инструментов
+
+[Матрица всех тем](practice-map.md) указывает самостоятельные изменения, интерфейс инструмента, входы/выходы и проверку. Формирование JSON или успешный mock не заменяет создание ресурса и чтение результата SDK.
+
+Примеры после ручного запуска соответствующего сервиса и установки зависимостей его модуля:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 MLFLOW_TRACKING_URI=http://127.0.0.1:5001 python scripts/run_task.py test 04-mlflow/01-experiments -- -m writes
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 QDRANT_URL=http://127.0.0.1:6333 python scripts/run_task.py test 13-qdrant/01-plumbing -- -m writes
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 ELASTICSEARCH_URL=http://127.0.0.1:9200 python scripts/run_task.py test 14-elasticsearch-opensearch/01-elasticsearch -- -m writes
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 OPENSEARCH_URL=http://127.0.0.1:9200 python scripts/run_task.py test 14-elasticsearch-opensearch/02-opensearch -- -m writes
+```
+
+Elasticsearch и OpenSearch запускаются по очереди. Установка SDK в окружение не делает сервер доступным. Для Vault, Airflow и Triton используй точные переменные и команды страницы задания; не подставляй production endpoints или чужие токены.
+
+Выполнение LLM API-сценариев исключено: vLLM/SGLang generation/streaming/benchmark и генерация TensorRT-LLM/Triton backend не вызываются и не имитируются. Локальные формулы и подготовленные SSE остаются вычислительными упражнениями, а не интеграцией.

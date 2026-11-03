@@ -40,6 +40,16 @@ make task TASK=02-reproducibility/01-data-version
 
 Запиши SHA-256 CSV. Удали только рабочий CSV, сохранив `.dvc`-указатель, и восстанови `dvc pull`. Сравни хеши. Затем добавь собственную вторую версию CSV и покажи переключение данных через предыдущий Git commit и `dvc checkout`. Исходный датасет курса при этом не меняется.
 
+## Проверка настоящего DVC
+
+Создай отдельную среду по SETUP и установи `python -m pip install -r labs/dvc/requirements.txt`, затем подключи локальный пакет: `python -m pip install --no-deps -e labs/housing`.
+
+```bash
+MLOPS_RUN_SDK=1 python scripts/run_task.py test 02-reproducibility/01-data-version -- -m sdk
+```
+
+Проверка использует настоящий DVC CLI и локальный remote во временной папке: add/push, удаление файла и локального cache, pull. Восстановленные bytes сверяются с исходными и с твоими `sha256_file`/`verify_restore`. Она не обращается к `work/` и не заменяет самостоятельный опыт с двумя Git/DVC-версиями. Отсутствие DVC при включённом флаге — ошибка подготовки, незавершённая функция — `NotImplementedError`.
+
 ## Приёмка и очистка
 
 Запусти указанную выше команду `make task` после реализации и исправления ошибок. Проверяемые случаи перечислены в соседнем `test_task.py`.

@@ -1,5 +1,7 @@
 # Матрица покрытия
 
+Подробная [матрица всех тем](practice-map.md) показывает, где используются SDK/CLI и какие реальные результаты проверяются.
+
 | Инструмент / тема | Теория и практика | Стартовые файлы | Проверяемый результат |
 |---|---|---|---|
 | Python, NumPy, pandas | [Модуль](../modules/00-python/README.md) · [задания](../modules/00-python/practice.md) | [tasks](../modules/00-python/tasks/) · [labs/python](../labs/python/) | Фильтрация, CLI, тесты и анализ таблицы |
@@ -18,6 +20,6 @@
 | Qdrant и embeddings | [Модуль](../modules/13-qdrant/README.md) · [задания](../modules/13-qdrant/practice.md) | [tasks](../modules/13-qdrant/tasks/) · [labs/qdrant](../labs/qdrant/) | Upsert, фильтр, Recall/MRR |
 | Elasticsearch, OpenSearch | [Модуль](../modules/14-elasticsearch-opensearch/README.md) · [задания](../modules/14-elasticsearch-opensearch/practice.md) | [tasks](../modules/14-elasticsearch-opensearch/tasks/) · [labs/search](../labs/search/) | Keyword/vector/RRF сравнение |
 | Triton Inference Server, ONNX | [Модуль](../modules/15-triton/README.md) · [задания](../modules/15-triton/practice.md) | [tasks](../modules/15-triton/tasks/) · [labs/triton](../labs/triton/) | Parity; дополнительный inference |
-| vLLM, SGLang, TensorRT-LLM | [Модуль](../modules/16-llm-serving/README.md) · [задания](../modules/16-llm-serving/practice.md) | [tasks](../modules/16-llm-serving/tasks/) · [labs/llm](../labs/llm/) | Расчёт памяти; дополнительный GPU benchmark |
+| vLLM, SGLang, TensorRT-LLM | [Модуль](../modules/16-llm-serving/README.md) · [задания](../modules/16-llm-serving/practice.md) | [tasks](../modules/16-llm-serving/tasks/) · [labs/llm](../labs/llm/) | Расчёт памяти и метрик; LLM API-сценарии исключены |
 
 Рекомендации и примеры подготовки к работе без обязательных отчётов: [модуль 17](../modules/17-career/README.md), [основной проект](../projects/capstone/README.md), [поиск](../projects/search/README.md). Наличие строки означает наличие материалов, а не факт runtime-проверки: сценарии и ограничения описаны в [проверках курса](verification.md).

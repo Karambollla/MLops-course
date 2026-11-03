@@ -40,7 +40,7 @@
 ## 5. Специализированный инференс
 
 - [15. Triton](modules/15-triton/practice.md): ONNX, parity, запросы к серверу и измерение latency.
-- [16. LLM-serving](modules/16-llm-serving/practice.md): память, streaming, vLLM, SGLang и TensorRT-LLM.
+- [16. LLM-serving](modules/16-llm-serving/practice.md): архитектура vLLM/SGLang/TensorRT-LLM, память и локальная обработка подготовленных streaming-событий; API-сценарии исключены.
 
 Результат: модель подготовлена к специализированному инференсу, а измерения сопровождаются условиями эксперимента. Экспорт ONNX и разбор контрактов доступны на CPU; серверные и GPU-задания выполняются только на совместимом оборудовании. Требования указаны в README каждого задания.
 

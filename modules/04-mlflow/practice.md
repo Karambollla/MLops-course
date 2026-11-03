@@ -36,3 +36,14 @@ curl -I http://localhost:5001
 ## Завершение
 
 `docker compose -f labs/mlflow/compose.yaml down` сохраняет volume. Удаление volume не требуется; перед его намеренным удалением сохрани идентификаторы запусков, release manifest и нужные артефакты.
+
+## Что подтверждает настоящий SDK
+
+Локальные SDK-тесты включаются `MLOPS_RUN_SDK=1` в среде с закреплёнными requirements.
+Они не требуют сервера. Для проверки HTTP metadata/artifact/Registry paths уже
+работающего стенда используй `MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1` и
+`python -m pytest modules/04-mlflow -m integration -q`. Оба флага обязательны для
+создания ресурсов. Тесты работают в уникальных experiment/model и удаляют свои
+записи; подробности soft delete и ручного outage — в README тем 01/03.
+Заготовки остаются RED до собственной реализации. Health/UI и fake SDK-тест не
+считаются выполненным опытом регистрации модели с её реальными артефактами.

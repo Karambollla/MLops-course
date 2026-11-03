@@ -80,6 +80,8 @@ HTTP-клиент видит контракт tensors, а не Python-метод
 
 Для `features` формы `[1,8]` запрос содержит `inputs` с `name`, `datatype:"FP32"`, `shape:[1,8]`, `data` из восьми чисел. Для `[2,8]` поле data содержит 16 значений построчно. Шаблон с null и пустым data показывает структуру; отправлять его как готовый запрос нельзя.
 
+Student `infer` использует необязательный `tritonclient[http]==2.59.0`: создаёт `InferInput` из той же FP32-матрицы, запрашивает `InferRequestedOutput`, вызывает `InferenceServerClient.infer` и извлекает именованный ndarray через `as_numpy`. CLI читает JSON-строки и печатает model/outputs с shape и данными. Это обычный табличный ONNX inference. Client зависимости отделены в `labs/triton/client-requirements.txt` от Mac ONNX-export зависимостей; окружения описаны в [практике](practice.md). API типов — в [официальной HTTP SDK reference](https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2560/user-guide/docs/_reference/tritonclient/tritonclient.http.html).
+
 Разделяй три проверки: `/v2/health/ready` — готовность сервера, `/v2/models/housing/ready` — доступность модели, `/v2/models/housing/infer` — реальное вычисление. HTTP 200 первого endpoint не доказывает правильный output. Метаданные модели доступны в `/v2/models/housing`; config — в `/v2/models/housing/config`.
 
 Compose монтирует `work/triton/model_repository` в `/models:ro`: сервер читает экспорт, а не каталог задания. HTTP работает на 8000, gRPC — 8001, метрики — 8002. Только чтение означает, что сервер не переписывает исходный model repository. После замены комплекта файлов перезапусти сервер и заново проверь модель.
@@ -89,6 +91,8 @@ Compose монтирует `work/triton/model_repository` в `/models:ro`: се�
 **Latency** — время от начала до завершения одного клиентского запроса. **Throughput** — число завершённых запросов за общее стенное время эксперимента. **Concurrency** — число одновременно ожидаемых ответов. Это разные измерения: при параллельной работе сумма latency может быть больше длительности эксперимента.
 
 В учебном примере задержки 10/20/30 ms измерены за 1 s. Median p50=20 ms. Для линейного p95 позиция в отсортированном массиве равна `(3-1)*0.95=1.9`; интерполяция между 20 и 30 даёт 29 ms. Throughput=3/1=3 requests/s. Если один status=500, error_ratio=1/3. Контракт включает ошибки в latency и число всех запросов; полезный throughput успешных ответов при необходимости считай отдельно и подписывай.
+
+Student `benchmark` измеряет реальные вызовы своей `infer` в последовательной серии: warmup исключается, сырые latency/status и отдельный elapsed_seconds сохраняются CLI вместе с вычисленным `latency_summary`. Это baseline concurrency=1. HTTP SDK client не thread safe: для дальнейшего опыта concurrency=4 не разделяй один client между потоками.
 
 Для сравнения FastAPI/Triton используй ту же модель, строки, batch, hardware и concurrency. Отдели warmup — прогрев до измерений — от минимум 200 измеряемых запросов, повтори concurrency 1 и 4. Сохраняй исходный CSV и общее elapsed_seconds, а не только p95. Метрики сервера не включают весь клиентский путь и не заменяют end-to-end измерение.
 

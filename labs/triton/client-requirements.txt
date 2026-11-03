@@ -1,0 +1,2 @@
+# Optional HTTP client, kept separate from the Mac ONNX export environment.
+tritonclient[http]==2.59.0

@@ -61,3 +61,20 @@ MLOPS_RUN_SDK=1 python scripts/run_task.py test 04-mlflow/02-registry -- -m sdk
 ```
 
 Используются только временные данные, внешний сервер не нужен. Без флага проверка пропускается; при включённом флаге отсутствие SDK считается ошибкой подготовки окружения. Этот запуск не заменяет практику работающего стенда. Подробнее — [режимы проверок](../../../../docs/task-structure.md#локальные-проверки-sdk).
+
+## Серверная интеграционная проверка
+
+При работающем стенде и установленном `labs/mlflow/requirements.txt`:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 MLFLOW_TRACKING_URI=http://127.0.0.1:5001 python -m pytest modules/04-mlflow/tasks/02-registry/test_task.py -m integration -q
+```
+
+Тест создаёт собственные уникальные experiment/model, использует маленький
+синтетический Pipeline и удаляет только свои записи в finally. Не требуется
+существующая обученная housing-модель. Обязательны оба флага записи;
+markers — `integration`, `writes`. Ограничение soft delete файлов описано в
+[теме экспериментов](../01-experiments/README.md#проверка-настоящего-сервера).
+Проверяются исходный run/version/source, закреплённый URI, aliases, signature,
+input example и реальные прогнозы загруженного Pipeline с rtol=1e-6, atol=1e-8.
+Тест вызывает student `register_model`, `resolve_release`, `assert_parity`.

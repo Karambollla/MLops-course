@@ -183,3 +183,39 @@ def test_sdk_registers_pipeline_signature_example_and_pinned_release(
         mlflow.set_tracking_uri(previous_tracking)
         mlflow.set_registry_uri(previous_registry)
         mlflow.tracking.fluent._active_experiment_id = previous_experiment
+
+
+@pytest.mark.integration
+@pytest.mark.writes
+def test_server_registry_links_signature_aliases_and_prediction_parity(mlflow_server):
+    server = mlflow_server
+    frame = pd.DataFrame({"x": np.linspace(-3, 3, 35), "y": np.linspace(1, 4, 35) ** 2})
+    pipeline = Pipeline([("scale", StandardScaler()), ("model", Ridge(alpha=0.23))])
+    pipeline.fit(frame, 2 * frame.x + 0.4 * frame.y)
+    with server.sdk.start_run(experiment_id=server.experiment_id) as run:
+        run_id = run.info.run_id
+    release = s.register_model(
+        pipeline, frame.iloc[:5], run_id, server.model_name, server.uri
+    )
+    assert release["model_name"] == server.model_name
+    assert release["run_id"] == run_id
+    assert int(release["version"]) > 0
+    assert release["model_uri"] == f"models:/{server.model_name}/{release['version']}"
+    version = server.client.get_model_version(server.model_name, release["version"])
+    assert version.run_id == run_id and version.source
+    assert (
+        server.client.get_run(version.run_id).info.experiment_id == server.experiment_id
+    )
+    for alias in ("candidate", "champion"):
+        resolved = s.resolve_release(server.client, server.model_name, alias, run_id)
+        assert resolved["version"] == release["version"]
+    info = server.sdk.models.get_model_info(release["model_uri"])
+    assert info.signature is not None and info.signature.inputs is not None
+    assert info.signature.outputs is not None and info.saved_input_example_info
+    loaded = server.sdk.sklearn.load_model(release["model_uri"])
+    assert isinstance(loaded, Pipeline)
+    assert np.isfinite(loaded.predict(frame)).all()
+    np.testing.assert_allclose(
+        pipeline.predict(frame), loaded.predict(frame), rtol=1e-6, atol=1e-8
+    )
+    s.assert_parity(pipeline, loaded, frame)

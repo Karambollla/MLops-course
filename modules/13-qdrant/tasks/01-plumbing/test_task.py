@@ -3,11 +3,12 @@ import json
 import os
 from importlib.metadata import version
 from pathlib import Path
+from uuid import uuid4
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import pytest
-from course_tasks import load_solution
+from course_tasks import load_solution, load_task
 
 try:
     from qdrant_client import QdrantClient, models
@@ -248,3 +249,84 @@ def test_sdk_incompatible_schema_refuses_safely_or_really_indexes(
             assert point.vector == pytest.approx(
                 [value / norm for value in doc["vector"]]
             )
+
+
+@pytest.mark.sdk
+@pytest.mark.skipif(
+    os.getenv("MLOPS_RUN_SDK") != "1", reason="Set MLOPS_RUN_SDK=1 for local Qdrant SDK"
+)
+def test_sdk_student_query_filters_and_uses_named_collection(local_qdrant):
+    corpus = Path(__file__).resolve().parents[4] / "labs/search/corpus.json"
+    collection = "mlops-local-query"
+    s.index_documents("http://unused.invalid:6333", corpus, collection=collection)
+    hits = s.query_documents(
+        "http://unused.invalid:6333",
+        [0, 0, 0, 1],
+        k=2,
+        topic="security",
+        collection=collection,
+    )
+    assert {hit["id"] for hit in hits} == {7, 8}
+    assert all(hit["payload"]["topic"] == "security" for hit in hits)
+    by_id = {hit["id"]: hit for hit in hits}
+    assert by_id[7]["score"] == pytest.approx(1.0)
+    assert by_id[8]["score"] == pytest.approx(0.8 / (0.66**0.5))
+    release = s.query_documents(
+        "http://unused.invalid:6333",
+        [1, 0, 0, 0],
+        k=2,
+        topic="release",
+        collection=collection,
+    )
+    assert {hit["id"] for hit in release} == {1}
+    assert (
+        s.query_documents(
+            "http://unused.invalid:6333",
+            [0, 0, 0, 1],
+            topic="missing",
+            collection=collection,
+        )
+        == []
+    )
+    with pytest.raises(ValueError):
+        s.query_documents("http://unused.invalid:6333", [1, 0], collection=collection)
+
+
+@pytest.mark.integration
+@pytest.mark.writes
+@pytest.mark.skipif(
+    os.getenv("MLOPS_RUN_INTEGRATION") != "1" or os.getenv("MLOPS_RUN_WRITES") != "1",
+    reason="Set both MLOPS_RUN_INTEGRATION=1 and MLOPS_RUN_WRITES=1",
+)
+def test_live_student_index_query_and_metrics_use_owned_collection():
+    assert QdrantClient is not None, "Install labs/qdrant/requirements.txt"
+    url = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
+    client = QdrantClient(url=url)
+    collection = "mlops-test-qdrant-" + uuid4().hex
+    assert not client.collection_exists(collection)
+    corpus = Path(__file__).resolve().parents[4] / "labs/search/corpus.json"
+    try:
+        s.index_documents(url, corpus, collection=collection)
+        s.index_documents(url, corpus, collection=collection)
+        assert client.count(collection, exact=True).count == 8
+        queries = json.loads(corpus.with_name("queries.json").read_text())
+        metrics = load_task("13-qdrant/02-evaluation")
+        for query in queries:
+            hits = s.query_documents(url, query["vector"], k=2, collection=collection)
+            assert all(isinstance(hit["score"], (int, float)) for hit in hits)
+            assert metrics.ranking_metrics(
+                [hit["id"] for hit in hits], query["relevant"], 2
+            ) == {"recall": 1.0, "precision": 1.0, "mrr": 1.0}
+        hits = s.query_documents(
+            url, [0, 0, 0, 1], k=8, topic="security", collection=collection
+        )
+        assert {hit["id"] for hit in hits} == {7, 8}
+        assert all(hit["payload"]["topic"] == "security" for hit in hits)
+        assert (
+            s.query_documents(url, [0, 0, 0, 1], topic="missing", collection=collection)
+            == []
+        )
+    finally:
+        if client.collection_exists(collection):
+            client.delete_collection(collection)
+        client.close()

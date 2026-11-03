@@ -29,8 +29,19 @@ make task TASK=14-elasticsearch-opensearch/01-elasticsearch
 ```bash
 docker compose -f labs/search/elasticsearch.compose.yaml up -d
 curl -sS http://localhost:9200
-curl -sS -X PUT http://localhost:9200/course-docs -H 'Content-Type: application/json' --data-binary @labs/search/elasticsearch.mapping.json
+python -m pip install -r labs/search/requirements.txt
+python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py index --index course-docs
 ```
+
+После реализации SDK-заготовок CLI делает создание/проверку mapping, bulk с проверкой каждого item, refresh и поиск. Повторный ingest сохраняет 8 документов, Vault находит ID7, security kNN — 7/8. Функции поиска возвращают IDs, score и payload; их IDs поступают в ranking_metrics/RRF. Нужны также завершённые 13/02-evaluation и 14/03-comparison.
+
+```bash
+# Только тесты, создающие собственный UUID-индекс и удаляющие его в finally:
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 ELASTICSEARCH_URL=http://127.0.0.1:9200 python scripts/run_task.py test 14-elasticsearch-opensearch/01-elasticsearch -- -m writes
+# Для OpenSearch: OPENSEARCH_URL и задача 02-opensearch, после остановки ES.
+```
+
+Без обоих флагов writes пропускаются. `MLOPS_RUN_INTEGRATION=1` отдельно включает прежние read-only probes по заранее подготовленному course-docs; ограничивай запуск `-m 'integration and not writes'`, если нужен только probe. Проверка функции и probe не заменяют вызов SDK-загрузки и поиска твоим кодом.
 
 ## Завершение
 

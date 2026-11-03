@@ -60,3 +60,38 @@ docker compose -f labs/airflow/compose.yaml exec airflow airflow dags list-runs 
 ## Пример корректного результата
 
 В DAG validate_data завершается success, train_evaluate запускает housing.train в ML venv. XCom содержит только path и run_key. До реализации обучения ожидается NotImplementedError из заготовки; import error DAG или отсутствие данных — отдельные ошибки подготовки.
+
+## Настоящий SDK и загрузка DAG
+
+`housing_pipeline.py` импортирует декораторы и context из `airflow.sdk` (Airflow
+3.1.0). Отдельные `gate` и `publish` уже видны в графе как **заготовки действий**:
+их тела оставлены с `NotImplementedError`, реализуй их по темам 02/03. Передача
+metadata по зависимостям не заменяет проверку качества и публикацию.
+
+Когда контейнер уже запущен, проверь импорт настоящим Airflow внутри него:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 python -m pytest modules/05-airflow/tasks/01-pipeline/test_task.py -m integration -q
+```
+
+Эта read-only проверка не поднимает контейнеры и не запускает tasks: настоящий
+`DagBag` проверяет импорт SDK, task IDs, зависимости и retry. Успешный импорт
+**не означает** выполненное обучение. Временные metadata `{path, run_key}` —
+контракт XCom train; содержимое joblib/DataFrame туда не передаётся. Реальное
+выполнение всего DAG до реализации новых tasks ожидаемо падает с
+`NotImplementedError`.
+
+После реализации функций и DAG используй существующий учебный стенд:
+
+```bash
+docker compose -f labs/airflow/compose.yaml exec -T airflow airflow dags test housing_pipeline 2025-01-01T00:00:00+00:00
+```
+
+Команда исполняет tasks и пишет реальные DAG/task metadata и файлы в `/work`.
+Выбери отдельный output для опыта. Это ручное разрешение на запись; автоматические
+тесты с такой записью должны требовать **оба** `MLOPS_RUN_INTEGRATION=1` и
+`MLOPS_RUN_WRITES=1`, markers `integration`, `writes`. Команда приведена в
+[CLI Airflow 3.1.0](https://airflow.apache.org/docs/apache-airflow/3.1.0/cli-and-env-variables-ref.html).
+`dags test` помогает отладке, но работа scheduler/retry и двух прошлых интервалов
+подтверждается отдельным опытом через UI по темам 02/03. Не используй mark-success,
+чтобы превратить невыполненный task в доказательство выполнения.

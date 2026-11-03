@@ -24,9 +24,10 @@ make task TASK=02-reproducibility/01-data-version
 
 ## Подготовка
 
-Создай отдельное окружение и установи `dvc==3.59.2`. Выполняй команды внутри `work/dvc-demo`, а не в случайном существующем репозитории:
+Создай отдельное окружение и установи `python -m pip install -r labs/dvc/requirements.txt` из корня курса: файл закрепляет DVC и совместимые зависимости. Выполняй команды внутри `work/dvc-demo`, а не в случайном существующем репозитории:
 
 ```bash
+export DVC_SITE_CACHE_DIR="$PWD/work/dvc-site-cache"
 mkdir -p work/dvc-demo work/dvc-remote
 cp work/housing.csv work/dvc-demo/housing.csv
 cd work/dvc-demo

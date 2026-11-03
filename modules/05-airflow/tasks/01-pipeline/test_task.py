@@ -1,6 +1,8 @@
 """Offline проверки поведения; исходная заготовка должна быть RED."""
 
+import os
 import subprocess
+from pathlib import Path
 
 import pytest
 from course_tasks import load_solution
@@ -72,3 +74,45 @@ def test_successful_process_requires_every_artifact(tmp_path, monkeypatch, missi
         pass
     else:
         pytest.fail(f"Successful process did not produce required {missing}")
+
+
+@pytest.mark.integration
+def test_dag_loads_with_real_airflow_sdk_in_running_container():
+    """Read-only DagBag parse; never starts a service or executes a learner task."""
+    if os.getenv("MLOPS_RUN_INTEGRATION") != "1":
+        pytest.skip(
+            "Set MLOPS_RUN_INTEGRATION=1 with an already running Airflow container"
+        )
+    root = Path(__file__).resolve().parents[4]
+    script = """
+import airflow
+from airflow.models.dagbag import DagBag
+assert airflow.__version__ == "3.1.0", airflow.__version__
+bag = DagBag(dag_folder="/opt/airflow/dags/housing_pipeline.py", include_examples=False)
+assert not bag.import_errors, bag.import_errors
+dag = bag.dags.get("housing_pipeline")
+assert dag is not None
+assert {"validate_data", "train_evaluate", "gate", "publish"} <= set(dag.task_ids)
+assert "train_evaluate" in dag.get_task("validate_data").downstream_task_ids
+assert "gate" in dag.get_task("train_evaluate").downstream_task_ids
+assert "publish" in dag.get_task("gate").downstream_task_ids
+assert dag.get_task("publish").retries >= 1
+"""
+    result = subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            str(root / "labs/airflow/compose.yaml"),
+            "exec",
+            "-T",
+            "airflow",
+            "python",
+            "-c",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

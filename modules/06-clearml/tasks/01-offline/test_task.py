@@ -1,7 +1,10 @@
 """Check student's SDK calls against varying actual training outputs, without ClearML."""
 
 import hashlib
+import importlib.util
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -152,3 +155,37 @@ def test_main_closes_sdk_task_after_success(tmp_path, monkeypatch):
     )
     assert solution.main() == "training-result"
     assert events == ["trained", "closed"]
+
+
+@pytest.mark.sdk
+@pytest.mark.parametrize("seed", [29, 83])
+def test_real_offline_sdk_persists_params_scalars_and_output_artifacts(tmp_path, seed):
+    if os.getenv("MLOPS_RUN_SDK") != "1":
+        pytest.skip("Set MLOPS_RUN_SDK=1 for the pinned real offline ClearML SDK")
+    if importlib.util.find_spec("clearml") is None:
+        pytest.fail("Install labs/clearml/requirements.txt before enabling SDK tests")
+    env = dict(os.environ)
+    env.update(
+        {
+            "CLEARML_OFFLINE_MODE": "1",
+            "CLEARML_CACHE_DIR": str(tmp_path / "cache"),
+            "CLEARML_CONFIG_FILE": str(tmp_path / "clearml.conf"),
+        }
+    )
+    # Do not inherit credentials/remote-task state; offline tests need no server.
+    for key in list(env):
+        if key.startswith(("CLEARML_API_", "CLEARML_TASK_", "CLEARML_PROC_")):
+            env.pop(key)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(Path(__file__).with_name("sdk_offline_probe.py")),
+            str(tmp_path),
+            str(seed),
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

@@ -100,3 +100,9 @@ Security в учебных конфигурациях отключена, пор
 - [Elasticsearch kNN 8.17](https://www.elastic.co/guide/en/elasticsearch/reference/8.17/knn-search.html) — candidate search и схема запроса.
 - [OpenSearch kNN 2.19](https://docs.opensearch.org/2.19/query-dsl/specialized/k-nn/) — фильтры и параметры поддерживаемых engines.
 - [OpenSearch Docker 2.19](https://docs.opensearch.org/docs/2.19/install-and-configure/install-opensearch/docker/) — memory и Linux prerequisites.
+
+## SDK как граница приложения
+
+Для Elasticsearch 8.17.3 используется Python client 8.17.2, для OpenSearch 2.19.1 — opensearch-py 2.8.0 (`labs/search/requirements.txt`). Их top-level импорты находятся в заготовках; отсутствие пакета допускается при сборе чистых тестов, сетевые команды требуют установленного SDK. Клиент управляет транспортом, а твой код отвечает за mapping, сохранение IDs, разбор каждого bulk item, refresh и преобразование hits.
+
+Реальный путь практики: CLI → ensure_index → build_bulk/client.bulk/bulk_failures → refresh → lexical_search/vector_search → нормализованные IDs/score/payload → ranking_metrics и RRF. Функции SDK оставлены студенту как NotImplementedError; CLI уже разбирает параметры, создаёт клиент и закрывает его. Read-only probe проверяет готовый course-docs. Отдельные integration/writes тесты под двумя флагами MLOPS_RUN_INTEGRATION=1 и MLOPS_RUN_WRITES=1 вызывают студенческий ingest/query в уникальном имени и удаляют только это имя. Команды и точные контракты — в заданиях.

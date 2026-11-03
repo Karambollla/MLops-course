@@ -1,29 +1,27 @@
-# Минимальные права
+# Минимальные права: Python SDK Vault
 
-## Зачем проверять минимальный доступ
+[Теория](../../README.md) · [Практика](../../practice.md) · [Подсказки](../../hints.md)
 
-Клиенту нужен один ключ чтения артефакта, а не право изменять все секреты. Успешный запрос с root не проверяет это ограничение. Поэтому здесь одновременно проверяются разрешённое чтение, отказ соседнему пути и отсутствие значения секрета в результате программы.
+Клиент читает один ключ закрытого артефакта. Администратор готовит dev Vault, секрет `secret/housing` и policy; приложение использует отдельный ограниченный token. Успех с root не проверяет минимальные права.
 
-Уже есть локальный dev Vault и HTTP-обвязка в `solution.py`; настройка стенда описана в практике. Ты реализуешь проверку payload и ограничиваешь task-local policy. Различие участников объясняется в [аутентификации и авторизации](../../README.md#кто-удостоверяет-клиента-и-кто-разрешает-чтение), структура — в [KV v2](../../README.md#kv-v2-путь-политика-и-форма-ответа).
+Реализуй `inspect_payload(payload)` и `read_secret(client,path="housing",mount_point="secret")`. Первая функция проверяет `data.data.artifact_key`: возвращает только `{"field_present":true}`, при неверной структуре или отсутствии поля вызывает ValueError. Вторая вызывает `client.secrets.kv.v2.read_secret_version`, передаёт логический путь `housing` и mount `secret`, затем использует первую функцию. В HTTP SDK сам добавляет `/v1/secret/data/`. Не возвращай исходный payload, значение ключа, token и текст ошибок; не печатай их. Ошибки SDK `hvac.exceptions.Forbidden` и `requests.exceptions.Timeout` передавай вызывающему коду без повторов: CLI отображает безопасный исход и завершает процесс с ошибкой.
 
-## Контракт данных и прав
-
-Вход `inspect_payload` — распарсенный JSON с полем `data.data.artifact_key`; выход — только `{"field_present": true}`. Например, `{"data":{"data":{"artifact_key":"fake-demo"}}}` подтверждает наличие поля, но строка `fake-demo` не появляется в результате. Отсутствующее поле или структура дают ValueError. Policy разрешает read только `secret/data/housing`; приложение использует отдельный ограниченный token. Тесты проверяют чистую функцию, реальный GET выполняется тобой после подготовки Vault.
-
-## Реализация и проверка
-
-Реализуй `inspect_payload(payload)`: из Vault KV v2 ответа проверь наличие artifact_key и верни только `{"field_present": true}`. Отсутствующая структура/поле — ValueError. Значение секрета никогда не возвращай и не печатай. `policy.hcl` ограничь read на `secret/data/housing`.
+`solution.py` уже создаёт настоящий `hvac.Client` из env с таймаутом. Заполни task-local `policy.hcl`: разрешено только чтение `secret/data/housing`, без wildcard. Подготовка стенда и установка `hvac==2.3.0` описаны в практике.
 
 ```bash
 make task TASK=10-vault/01-policy
-```
-
-Подготовь Vault и ограниченный application token по [практике](../../practice.md). Не запускай клиент с root token. Следующие команды печатают только HTTP-код:
-
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/housing"
-curl -s -o /dev/null -w '%{http_code}\n' -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/neighbor"
+MLOPS_RUN_SDK=1 make task TASK=10-vault/01-policy
 python scripts/run_task.py run 10-vault/01-policy
 ```
 
-Ожидаются 200, 403 и field_present=true. Write запрещён политикой; проверяй capabilities при ручной настройке, не записывай секреты ради теста. Ошибка 403 отличается от timeout. Не сохраняй токены в файлы проекта. После практики unset VAULT_TOKEN и останови dev Vault.
+CLI читает `VAULT_ADDR`/`VAULT_TOKEN`, принимает `--address`, `--path`, `--mount`, `--timeout`. После реализации ожидается только field_present=true. SDK-тест проходит через настоящий hvac KV2 и подменяет лишь transport без сетевого сервиса. Без SDK базовая коллекция работает, SDK-тест пропущен; незаполненные функции дают NotImplementedError.
+
+На уже подготовленном Vault с ограниченным application token:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 make task TASK=10-vault/01-policy
+curl -s -o /dev/null -w '%{http_code}\n' -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/housing"
+curl -s -o /dev/null -w '%{http_code}\n' -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/neighbor"
+```
+
+Live-тест вызывает именно твою `read_secret`: разрешённый путь даёт field_present=true, соседний — Forbidden/403. Он ничего не создаёт и не меняет; `VAULT_DENIED_PATH` позволяет указать другой заведомо запрещённый логический путь. Отрицательная проверка ловит ошибочное использование root. Отдельные curl probes сохранены для диагностики и печатают только коды 200/403. Закончи `unset VAULT_TOKEN`, затем `docker compose -f labs/vault/compose.yaml down`.

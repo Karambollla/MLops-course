@@ -7,7 +7,6 @@ import json
 import math
 from time import monotonic
 
-import httpx
 
 from course_tasks import load_task
 

@@ -49,3 +49,22 @@ make task TASK=04-mlflow/03-outage
 ## Пример корректного результата
 
 При ConnectionError состояние остаётся pending, исходный run_id сохраняется, champion не продвигается. Успешный повтор меняет status на registered и сохраняет точную version. Повтор уже registered не вызывает регистрацию снова.
+
+## Серверная интеграционная проверка
+
+При работающем стенде и установленном `labs/mlflow/requirements.txt`:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 MLFLOW_TRACKING_URI=http://127.0.0.1:5001 python -m pytest modules/04-mlflow/tasks/03-outage/test_task.py -m integration -q
+```
+
+Тест создаёт собственные уникальные experiment/model, использует маленький
+синтетический Pipeline и удаляет только свои записи в finally. Не требуется
+существующая обученная housing-модель. Обязательны оба флага записи;
+markers — `integration`, `writes`. Ограничение soft delete файлов описано в
+[теме экспериментов](../01-experiments/README.md#проверка-настоящего-сервера).
+Проверяется student `recover_registration`: отказ до запроса, durable pending,
+реальная регистрация исходного SDK artifact, повтор registered без второго вызова
+и без новой версии, неизменный champion. Отказ перед запросом **инъецирован**:
+этот тест не выключает сервер и не доказывает обработку потери ответа после commit.
+Описанный выше ручной опыт остановки/восстановления стенда остаётся обязательным.

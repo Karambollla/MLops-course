@@ -265,3 +265,13 @@ print(f"Offline folder: {task.get_offline_mode_folder()}")
 - [ClearML Agent](https://clear.ml/docs/latest/docs/clearml_agent/) — получение кода, подготовка среды и исполнение задачи. Для лабораторной используется Agent 1.9.3.
 - [Agent CLI](https://clear.ml/docs/latest/docs/clearml_agent/clearml_agent_ref/) — daemon, очереди и параметры процесса исполнителя.
 - [ClearML Server](https://clear.ml/docs/latest/docs/deploying_clearml/clearml_server/) — устройство серверного стенда и настройки подключений.
+
+## Как проверяется настоящий SDK
+
+В [теме 01](tasks/01-offline/README.md#автоматическая-проверка-настоящего-offline-sdk)
+есть opt-in `MLOPS_RUN_SDK=1` тест ClearML 1.18.0: подменяется только
+`housing.train.train`, а параметры, scalars и output artifacts сохраняет
+настоящий SDK. Проверяются фактическая offline-сессия и байты копий файлов.
+Отдельно требуется свой housing CSV/train. Ни fake unit, ни offline-сессия
+не подтверждают enqueue/Agent: для этого нужен настоящий Server и совместимый
+Linux исполнитель по [теме 02](tasks/02-agent/README.md#обязательное-подтверждение-очереди-и-результата).

@@ -64,8 +64,24 @@ def housing_pipeline():
             raise ValueError("XCom должен содержать только path и run_key")
         return result
 
-    # TODO(student): задания 02/03 добавляют отдельные gate/publish и interval.
-    train_evaluate(validate_data())
+    @task(retries=1)
+    def gate(metadata: dict) -> dict:
+        # TODO(student, тема 02): прочитай metrics.json по metadata["path"].
+        # Вызови свою quality_gate через ML venv; явно запрети publish при false.
+        # XCom возвращает только маленькие metadata, не модель и не DataFrame.
+        raise NotImplementedError("Подключи quality gate к настоящей Airflow task")
+
+    @task(retries=1)
+    def publish(metadata: dict) -> dict:
+        # TODO(student, темы 02/03): вызови свой идемпотентный publish через ML venv.
+        # get_current_context() даёт dag_run/ti и data_interval_start/end:
+        # сохрани реальный interval в manifest и исходный run_key при retry.
+        # Верни только metadata точного release, проверь файлы после side effect.
+        raise NotImplementedError("Подключи публикацию к настоящей Airflow task")
+
+    # TODO(student, тема 03): замени schedule=None явным UTC data-interval timetable,
+    # включи interval + версию кода/конфигурацию в смысловой ключ и manifest.
+    publish(gate(train_evaluate(validate_data())))
 
 
 housing_pipeline()

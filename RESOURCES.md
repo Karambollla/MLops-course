@@ -99,6 +99,8 @@
 - [KV v2](https://developer.hashicorp.com/vault/docs/secrets/kv/kv-v2) — версионирование и API paths.
 - [Kubernetes auth](https://developer.hashicorp.com/vault/docs/auth/kubernetes) — identity Pod и выдача ограниченных token.
 
+- [hvac KV v2](https://hvac.readthedocs.io/en/stable/usage/secrets_engines/kv_v2.html) — read_secret_version и структура ответа; методы вызываются клиентом hvac 2.3.0 в практике Vault.
+
 ## 11. Terraform: инфраструктура как код
 
 [Перейти к модулю](modules/11-terraform/README.md).
@@ -133,6 +135,9 @@
 - [OpenSearch vector search](https://docs.opensearch.org/docs/2.19/vector-search/) — knn_vector, engines и запросы.
 - [OpenSearch Docker](https://docs.opensearch.org/docs/2.19/install-and-configure/install-opensearch/docker/) — ресурсы и Linux sysctl для локального запуска.
 
+- [Elasticsearch Python SDK 8.17.2](https://elasticsearch-py.readthedocs.io/en/v8.17.2/api/elasticsearch.html) — client.indices, bulk и search; сопоставить параметры SDK с HTTP API сервера 8.17.3.
+- [OpenSearch Python SDK](https://docs.opensearch.org/latest/clients/python-low-level/) — index, bulk и search клиента opensearch-py; различия wire-формата проверяются на сервере курса 2.19.1.
+
 ## 15. Triton Inference Server и перенос модели
 
 [Перейти к модулю](modules/15-triton/README.md).
@@ -141,6 +146,8 @@
 - [Model configuration](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/model_configuration.html) — dims, batch и input/output.
 - [skl2onnx tutorial](https://onnx.ai/sklearn-onnx/) — поддерживаемые converters и initial_types.
 - [ONNX Runtime Python](https://onnxruntime.ai/docs/get-started/with-python.html) — InferenceSession и локальная проверка.
+
+- [Triton Python HTTP client](https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2590/user-guide/docs/_reference/tritonclient/tritonclient.http.html) — InferInput, InferRequestedOutput, infer и as_numpy; смотреть типы, binary transport и правила конкурентного использования клиента.
 
 ## 16. vLLM, SGLang и TensorRT-LLM
 

@@ -1,0 +1,2 @@
+# Optional Vault SDK; install in an environment prepared by SETUP.md.
+hvac==2.3.0

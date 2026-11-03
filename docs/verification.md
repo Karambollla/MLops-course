@@ -94,3 +94,28 @@ MLOPS_RUN_INTEGRATION=1 MLOPS_CONTAINER_ID=CONTAINER_ID make task TASK=03-servic
 - [Разрешение зависимостей](dependency-checks.json)
 - [Image manifests](image-manifests.json)
 - [Доступность источников](external-links.json)
+
+## Практика SDK и границы приёмки
+
+Подробная [матрица всех тем](practice-map.md) связывает самостоятельную реализацию с настоящим инструментом. Следующие проверки выполнены на изолированных временных данных и сервисах без пользовательского `work/`; это smoke SDK и инфраструктуры, а не готовые решения учащегося.
+
+| Инструмент | Фактически проверено | Что остаётся за реализацией учащегося |
+|---|---|---|
+| DVC 3.59.2 / pathspec 0.12.1 | Настоящие init/add/push, удаление файла и локального cache, pull из local remote с тем же SHA-256; site cache изолирован | Учебные sha256_file/verify_restore и опыт с двумя Git/DVC-версиями |
+| Elasticsearch 8.17.3 / client 8.17.2 | Создание mapping, два bulk/count=8, match по Vault, kNN/filter с ID7/8, частичный отказ bulk item | ensure_index/ingest_documents/search; live-тест вызывает эти заготовки и получает NotImplementedError |
+| OpenSearch 2.19.1 / client 2.8.0 | Собственный mapping, повторный bulk/count=8, match, kNN/filter, частичный отказ | Собственные SDK-функции; приёмка пока останавливается на NotImplementedError |
+| Qdrant 1.13.6 / client 1.13.3 | Настоящие upsert/count, query_points и payload-фильтр по security | Индексация/поиск и применение ranking_metrics к фактической выдаче |
+| Vault 1.19.0 / hvac 2.3.0 | KV v2 с ограниченным токеном, 403 на соседний путь, renew, revoke и истечение TTL | read_secret/inspect_payload и функции жизненного цикла токена; секреты в результатах проверки не сохранялись |
+| MLflow 3.1.1 | HTTP tracking, фактические параметры/метрика/артефакт, Registry signature и численный паритет загруженной модели | track_experiments/register_model/recover_registration; серверные тесты доходят до учебных заглушек |
+| ClearML 1.18.0 | Настоящая offline Task, сохранённые hyperparams/scalars/artifacts и копии bytes/hash в SDK cache | train_and_log; Server/Agent и исполнение очереди требуют отдельной совместимой среды |
+| Airflow 3.1.0 | Реальный DagBag, импорты SDK, граф validate/train/gate/publish, retries и наличие полей observer | Запуск своего обучения, gate/retry/publish, два успешных суточных интервала и XCom; импорт графа не подтверждает исполнение |
+| Housing/Prometheus/Grafana | Настоящие predict-запросы, рост scraped counter и health datasource Grafana | measure_load/summarize_run, собственные panels/alerts и интерпретация измерений |
+| Triton HTTP client 2.59.0 | Импорт на ARM64, настоящие InferInput/InferRequestedOutput/InferResult и NumPy-представления; ONNX-фикстура SDK-теста создаётся | Живой Triton server и его latency/throughput не проверены без совместимой серверной среды |
+
+Локальные SDK-проверки MLflow/Qdrant/ONNX/Vault/Triton и записывающие проверки поисковых сервисов/Vault/MLflow собираются и достигают ожидаемых NotImplementedError учебных функций. Это не зелёная приёмка решений. Настоящие SDK установлены в отдельных окружениях; обычные тесты курса по-прежнему собираются без них.
+
+Тесты с marker `writes` дополнительно требуют `MLOPS_RUN_WRITES=1` вместе с `MLOPS_RUN_INTEGRATION=1`. Они создают только собственные уникальные ресурсы и очищают их; прежние probes чтения используют один integration-флаг. Фактическое состояние Airflow run/attempt/interval проверяется отдельными read-only наблюдателями после самостоятельного запуска DAG.
+
+### Исключённые LLM API
+
+Не выполняются и не имитируются generation/streaming/benchmark endpoints vLLM/SGLang (`16-llm-serving/02-engines`), генерация TensorRT-LLM и его Triton backend (`16-llm-serving/03-tensorrt`), а также необязательный генератор ответа RAG-проекта. API-клиенты этих сценариев не добавлены. Локальные формулы памяти, SSE-парсинг и TTFT/TPOT по подготовленным событиям сохранены; они не считаются интеграцией с языковой моделью.

@@ -1,50 +1,29 @@
-# TensorRT-LLM: маршрут самостоятельного эксперимента
+# TensorRT-LLM: checkpoint, engine и Triton backend
 
 [Теория](../../README.md) · [Практика модуля](../../practice.md) · [Подсказки](../../hints.md)
 
-## Какую дополнительную границу проверяем
+## Что изучается
 
-vLLM/SGLang загружают модель своим runtime, а TensorRT-LLM может требовать отдельного преобразования и сборки engine. Нужно проследить путь от checkpoint до реально работающего Triton backend, не принимая открытый shell за serving. Значения checkpoint, engine и ensemble разобраны в [теории](../../README.md#tensorrt-llm-и-triton).
+TensorRT-LLM может требовать преобразования checkpoint и сборки engine под модель, dtype, shapes и GPU. Triton backend затем загружает engine; ensemble может включать токенизацию и обработку результата. Открытый shell в контейнере не подтверждает ни сборку, ни inference.
 
-Это дополнительное руководство для совместимого Linux/NVIDIA стенда. Уже предоставлен `labs/llm/tensorrt-llm.sh`, который открывает контейнер `25.06-trtllm-python-py3`. Готового engine, универсального model repository и inference JSON здесь нет: они зависят от поддерживаемой модели. Без GPU можно изучить последовательность; обязательных отчётов, форм для заполнения и тестов нет.
+Это справочное руководство. API-зависимые сценарии генерации TensorRT-LLM и соответствующего Triton backend пропущены. Обращения к LLM endpoints и их имитация не входят в практику; проходить GPU-лабораторную ради этого раздела не нужно.
 
-## От среды до engine
+## Путь данных и артефактов
 
-```bash
-nvidia-smi
-bash labs/llm/tensorrt-llm.sh
-```
-
-Первая команда показывает состояние GPU/драйвера хоста. Вторая запускает временный контейнер с доступом к GPU и открывает bash. Она не делает conversion/build и не запускает Triton. По [архивному guide 25.06](https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2560/user-guide/docs/tensorrtllm_backend/README.html) выбери поддерживаемую модель, conversion script и параметры build для своего GPU. Внутри архивного quickstart есть пример с тегом 24.07: он не меняет выбранный для курса образ 25.06. Сопоставь встроенные версии с support matrix и выбирай conversion/build примеры для них, а не копируй теги и команды другого комплекта. Qwen из предыдущей темы нельзя считать поддерживаемым автоматически.
-
-Последовательность имеет проверяемые входы и выходы:
-
-| Шаг | Вход | Ожидаемый результат |
+| Этап | Вход | Результат |
 |---|---|---|
-| Получить веса | Model ID и immutable revision | Доступный checkpoint выбранной модели |
-| Conversion, если требуется путём модели | Checkpoint и архитектурные параметры | Формат весов, который ожидает builder релиза |
-| Build | Совместимые веса, dtype, shapes/лимиты и GPU | Непустой engine и его metadata; успешный build log |
-| Repository | Engine и шаблоны backend 25.06 | Согласованные пути, config и tensor names |
-| Serving | Repository и совместимый runtime | Готовая модель и успешная генерация |
+| Checkpoint | Model ID, immutable revision и tokenizer | Сохранённые веса и конфигурация архитектуры |
+| Conversion | Совместимый checkpoint и поддерживаемый путь релиза | Представление весов для builder |
+| Build | Веса, dtype, shapes/лимиты и GPU | Engine и метаданные сборки |
+| Repository | Engine, backend config и tensor names | Структура загрузки Triton |
+| Serving | Repository и совместимый runtime | Обработка запросов; в этом курсе не выполняется |
 
-Скрипт использует `--rm` и не монтирует каталог результатов: файлы внутри контейнера исчезнут при его удалении. Если нужен сохранённый engine, до выхода перенеси его и конфигурацию из контейнера в собственный `work/`, например через `docker cp` из второго терминала. Не сохраняй гигабайтный артефакт только в слое временного контейнера. Используй команды именно выбранного пути 25.06, а не build API нового релиза.
+Изучи [архивное руководство backend 25.06](https://docs.nvidia.com/deeplearning/triton-inference-server/archives/triton-inference-server-2560/user-guide/docs/tensorrtllm_backend/README.html): requirements, conversion/build, model repository и связь preprocessing с engine. Сопоставляй примеры со встроенными версиями выбранного образа. Тег 24.07 внутри иллюстрации не делает engine совместимым с 25.06. Поддержку Qwen нельзя предполагать только из-за её использования в другом runtime.
 
-## Проверить serving
+Файл `labs/llm/tensorrt-llm.sh` служит примером запуска контейнера с GPU. Он не собирает engine автоматически, а результаты без bind mount исчезают вместе с временным контейнером. Чтение этого файла не считается runtime-опытом.
 
-После настройки repository и собственного запуска Triton:
+## Границы сравнения
 
-```bash
-curl --fail http://127.0.0.1:8000/v2/health/ready
-curl --fail http://127.0.0.1:8000/v2/models/tensorrt_llm/ready
-curl --fail http://127.0.0.1:8000/v2/models/tensorrt_llm/config
-```
+Разные модели, tokenizer, длины запросов или cache делают сравнение engines несопоставимым. Engine может зависеть от GPU и релиза TensorRT. Не указывай скорость или поддержку hardware по результату чтения конфигурации. Подробнее — [TensorRT-LLM и Triton](../../README.md#tensorrt-llm-и-triton).
 
-`tensorrt_llm` — имя типичного repository из guide; если имя другое, подставь его. Ожидаются readiness HTTP 200 и backend `tensorrtllm` в config. Это признаки правильного состояния, а не результат выполненного в тексте GPU-запуска.
-
-Для inference возьми клиент и tensor names из конкретного примера 25.06. Ensemble с preprocessing и низкоуровневый backend могут принимать разные входы. Успех — завершившийся запрос с непустым output, корректными shapes и без backend errors. Readiness отдельно не проверяет генерацию. Ошибка загрузки engine требует сверить версии, GPU и build flags; произвольная правка JSON клиента такую ошибку не исправит.
-
-## Что сохранять и как сравнивать
-
-Сохрани модель/revision, фактические команды conversion/build, GPU/driver/runtime, dtype, shapes, config и checksum engine рядом с исходными измерениями. Engine может зависеть от hardware и версии TensorRT; перенос файла не доказывает переносимость.
-
-Сравнивай с vLLM/SGLang только на той же поддерживаемой модели, tokenizer и workload по [протоколу](../../README.md#протокол-честного-сравнения). Если модели различаются, коэффициент ускорения нельзя приписать engine. После переноса нужных артефактов останови вручную запущенный сервер и выйди из контейнера. Чтение конфигурации без NVIDIA остаётся изучением архитектуры.
+Обязательного отчёта и автоматических тестов в руководстве нет. Локальные расчёты памяти и streaming-метрик выполняются в предыдущих темах; они не подтверждают генерацию через API.

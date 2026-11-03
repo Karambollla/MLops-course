@@ -34,3 +34,18 @@ UI: `http://localhost:8080`. Учётные данные standalone появля
 ## Завершение
 
 Останови Airflow перед Kubernetes: `docker compose -f labs/airflow/compose.yaml down`. Данные остаются в `work/` и named volume. Удаление volume сбрасывает историю DAG.
+
+## Обязательные признаки настоящего исполнения
+
+Тесты чистых функций и fake subprocess не заменяют Airflow. В теме 01 есть
+read-only opt-in загрузка DAG настоящим Airflow SDK внутри уже работающего
+контейнера: `MLOPS_RUN_INTEGRATION=1 python -m pytest
+modules/05-airflow/tasks/01-pipeline -m integration -q`. Она проверяет только
+импорт/граф. Тела gate/publish и interval wiring остаются student TODO.
+
+Практика завершена после настоящего запуска DAG, проверки отдельных task
+instances и XCom, существующих model/metrics/release, retry только упавшего
+publish без дубликата и двух суточных прошлых UTC интервалов. Конкретные критерии
+и команды — в README тем 01–03. Записывающие автоматические проверки требуют
+`MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1` и markers `integration`, `writes`;
+они не должны самостоятельно поднимать стенд или массовый backfill.

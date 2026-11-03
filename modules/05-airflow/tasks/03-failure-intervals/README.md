@@ -51,3 +51,27 @@ make task TASK=05-airflow/03-failure-intervals
 ## Пример корректного результата
 
 Интервал с началом 2026-01-01T00:00:00Z и концом 2026-01-02T00:00:00Z даёт partition=2026-01-01. Интервал без часового пояса или не равный 24 часам вызывает ValueError. Для уже published состояния callback не вызывается.
+
+## Приёмка расписания настоящим SDK
+
+В `housing_pipeline.py` уже доступны `get_current_context` и
+`CronDataIntervalTimetable`; wiring интервала оставлен TODO. Реализуй его сам,
+включая явное получение `data_interval_start/end` внутри task, сохранение в
+manifest и устойчивость ключа при retry. Приёмка требует две реальные прошлые
+суточные UTC task instances, разные partition и соответствующие сохранённые
+границы; повтор упавшего publish сохраняет прежние interval/run_key/artifact.
+
+Проверяй эти значения в UI/logs/XCom и реальных файлах обоих результатов.
+`interval_manifest` на двух строках и успешная загрузка DagBag не демонстрируют
+catchup/backfill. Ограничь опыт ровно двумя датами, выключи расписание после
+проверки; новый календарный день не должен незаметно расширять backfill.
+
+## Проверка реальных интервалов
+
+После двух успешных ежедневных запусков:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 AIRFLOW_INTERVAL_RUN_IDS='["свой-run-1", "свой-run-2"]' python scripts/run_task.py test 05-airflow/03-failure-intervals -- -m integration
+```
+
+Проверка читает две записи DagRun из metadata DB работающего контейнера и требует разные суточные UTC-интервалы. Она не создаёт backfill, не меняет scheduler и не подменяет интервалы текущим временем. Метаданные файлов и XCom сопоставь с этими run ID по описанной выше процедуре.

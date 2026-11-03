@@ -324,3 +324,34 @@ def test_requires_exactly_three_runs(count):
         records = records[:count]
     with pytest.raises(ValueError):
         s.select_candidate(records)
+
+
+@pytest.mark.integration
+@pytest.mark.writes
+def test_server_records_real_training_and_downloadable_artifacts(
+    tmp_path, mlflow_server
+):
+    server = mlflow_server
+    data, output = small_data(tmp_path, 67), tmp_path / "server-runs"
+    records = s.track_experiments(data, output, server.uri, experiment_name=server.name)
+    persisted = {}
+    for run in server.client.search_runs([server.experiment_id]):
+        files, pending_paths = {}, [""]
+        while pending_paths:
+            for item in server.client.list_artifacts(
+                run.info.run_id, pending_paths.pop()
+            ):
+                if item.is_dir:
+                    pending_paths.append(item.path)
+                else:
+                    path = server.client.download_artifacts(
+                        run.info.run_id, item.path, str(tmp_path)
+                    )
+                    files[item.path] = Path(path).read_bytes()
+        persisted[run.info.run_id] = {
+            "status": run.info.status,
+            "params": run.data.params,
+            "metrics": run.data.metrics,
+            "files": files,
+        }
+    assert_training_records(data, output, records, persisted)

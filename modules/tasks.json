@@ -251,7 +251,7 @@
       "tests": "test_task.py",
       "platform": "cpu",
       "kind": "exercise",
-      "entrypoint": null
+      "entrypoint": "solution.py"
     },
     {
       "id": "10-vault/03-integration",
@@ -350,7 +350,7 @@
       "tests": "test_task.py",
       "platform": "cpu",
       "kind": "integration",
-      "entrypoint": null
+      "entrypoint": "solution.py"
     },
     {
       "id": "14-elasticsearch-opensearch/02-opensearch",
@@ -359,7 +359,7 @@
       "tests": "test_task.py",
       "platform": "cpu",
       "kind": "integration",
-      "entrypoint": null
+      "entrypoint": "solution.py"
     },
     {
       "id": "14-elasticsearch-opensearch/03-comparison",
@@ -386,7 +386,7 @@
       "tests": "test_task.py",
       "platform": "linux-x86_64",
       "kind": "integration",
-      "entrypoint": null
+      "entrypoint": "solution.py"
     },
     {
       "id": "15-triton/03-benchmark",
@@ -395,7 +395,7 @@
       "tests": "test_task.py",
       "platform": "linux-x86_64",
       "kind": "exercise",
-      "entrypoint": null
+      "entrypoint": "solution.py"
     },
     {
       "id": "16-llm-serving/01-memory-contract",
@@ -411,7 +411,7 @@
       "title": "vLLM и SGLang: измерения",
       "starter": "solution.py",
       "tests": "test_task.py",
-      "platform": "nvidia",
+      "platform": "cpu",
       "kind": "exercise",
       "entrypoint": null
     },
@@ -420,7 +420,7 @@
       "title": "TensorRT-LLM: собственный engine",
       "starter": "README.md",
       "tests": null,
-      "platform": "nvidia",
+      "platform": "cpu",
       "kind": "guide",
       "entrypoint": null
     },

@@ -7,7 +7,6 @@ import argparse
 import os
 import subprocess
 import sys
-from pathlib import Path
 
 from course_tasks import course_root, task_catalog, task_directory
 
@@ -47,10 +46,15 @@ def main() -> int:
                     else "код"
                 )
                 print(f"{task['id']}  [{kind}] {task['title']}")
-            print("01-ml: задания и проверки находятся в modules/01-ml/housing.ipynb; запускай ячейки notebook.")
+            print(
+                "01-ml: задания и проверки находятся в modules/01-ml/housing.ipynb; запускай ячейки notebook."
+            )
             return 0
         if args.command == "test":
-            print("01-ml пропущен: проверки запускаются внутри modules/01-ml/housing.ipynb.", flush=True)
+            print(
+                "01-ml пропущен: проверки запускаются внутри modules/01-ml/housing.ipynb.",
+                flush=True,
+            )
             if args.all and args.task:
                 parser.error("Выбери одно задание либо --all")
             if not args.task and not args.all:
@@ -78,7 +82,11 @@ def main() -> int:
                 print("Автоматических проверок нет; открой README материалов.")
                 return 0
             paths = [
-                str(task_directory(task["id"]) / task.get("tests", "test_task.py"))
+                str(
+                    task_directory(task["id"])
+                    if task.get("tests", "test_task.py") == "test_task.py"
+                    else task_directory(task["id"]) / task["tests"]
+                )
                 for task in selected
             ]
             command = [

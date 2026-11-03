@@ -18,7 +18,7 @@
 
 Редактируй `modules/04-mlflow/tasks/01-experiments/solution.py`. Дополнительные тесты размещай в этой же папке.
 
-`select_candidate(runs: list[dict]) -> str`: ровно три FINISHED run с разными parameters, одинаковыми data_sha256/split, конечными неотрицательными validation_mae/validation_rmse; выбери минимум (validation_mae, run_id), верни run_id; при нарушении ValueError. Test-метрики не влияют на выбор. `track_experiments(data: Path, output: Path, tracking_uri: str) -> list[dict]` реально обучает три конфигурации на одном split и пишет MLflow experiment housing-course: параметры, data_sha256, split, версии, MAE/RMSE, model bundle. Возвращает записи для select_candidate, сохраняет comparison.json. Логируй измеренные метрики; не дублируй train, используй собственный candidate и расширь его конфигурацию при необходимости.
+`select_candidate(runs: list[dict]) -> str`: ровно три FINISHED run с разными parameters, одинаковыми data_sha256/split, конечными неотрицательными validation_mae/validation_rmse; выбери минимум (validation_mae, run_id), верни run_id; при нарушении ValueError. Test-метрики не влияют на выбор. `track_experiments(data: Path, output: Path, tracking_uri: str, *, experiment_name: str = "housing-course") -> list[dict]` реально обучает три конфигурации на одном split и пишет MLflow experiment housing-course: параметры, data_sha256, split, версии, MAE/RMSE, model bundle. Возвращает записи для select_candidate, сохраняет comparison.json. Логируй измеренные метрики; не дублируй train, используй собственный candidate и расширь его конфигурацию при необходимости.
 
 ## Среда и зависимости
 
@@ -67,3 +67,26 @@ MLOPS_RUN_SDK=1 python scripts/run_task.py test 04-mlflow/01-experiments -- -m s
 ```
 
 Используются только временные данные, внешний сервер не нужен. Без флага проверка пропускается; при включённом флаге отсутствие SDK считается ошибкой подготовки окружения. Этот запуск не заменяет практику работающего стенда. Подробнее — [режимы проверок](../../../../docs/task-structure.md#локальные-проверки-sdk).
+
+## Проверка настоящего сервера
+
+Параметр `experiment_name` позволяет использовать отдельный experiment, по умолчанию
+`housing-course`. Не зашивай имя внутри реализации. В закреплённой SDK-среде:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 MLFLOW_TRACKING_URI=http://127.0.0.1:5001 python -m pytest modules/04-mlflow/tasks/01-experiments/test_task.py -m integration -q
+```
+
+Сервер должен уже работать. Тест создаёт уникальный experiment, вызывает твою
+`track_experiments` на синтетическом CSV, затем новым серверным чтением проверяет
+три FINISHED run, params, вычисленные metrics, скачанные bundle/split/manifest и
+численную связь прогнозов с метриками. Синтетический CSV устраняет зависимость от
+`work/housing.csv`, но не реализует за тебя baseline/Pipeline/train: незавершённое
+обучение по-прежнему даёт `NotImplementedError`. Ни callback fake, ни локальная
+SQLite-проверка SDK не подтверждают работу HTTP artifact proxy.
+
+Тесты с записью требуют **оба** флага, имеют markers `integration`, `writes` и
+удаляют только свои уникальные model/experiment/run. MLflow soft delete experiment
+не гарантирует физическое удаление файлов artifact store; не запускай глобальный
+`mlflow gc` на общей среде. Очистку изолированного учебного volume выполняй отдельно
+после сохранения нужной истории.
