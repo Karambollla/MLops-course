@@ -1,19 +1,19 @@
 # Контракт стартового проекта
 
-Канонический учебный код: [baseline и метрики](../../modules/01-ml/tasks/01-baseline/README.md), [Pipeline и обучение](../../modules/01-ml/tasks/02-candidate/README.md). Файлы housing.train/evaluate — совместимые адаптеры; реализуй функции в указанных tasks.
+Учебный код, условия и проверки находятся в [ML-notebook](../../modules/01-ml/housing.ipynb). `housing.train` и `housing.evaluate` загружают только отмеченные ячейки с импортами и функциями из сохранённого файла, без Jupyter и выполнения остальных ячеек.
 
 Обучение и метрики — упражнения; HTTP-обвязка, загрузчик данных и тестовые примеры уже есть. Работай из корня курса, установив пакет по [SETUP](../../SETUP.md).
 
 ## Артефакты
 
-`python -m housing.train --data work/housing.csv --output modules/01-ml/tasks/02-candidate/output --seed 42` после реализации создаёт:
+Последняя ячейка notebook сохраняет в `work/artifacts/`:
 
 - `model.joblib`: словарь `schema_version=1`, `pipeline` (обученный sklearn Pipeline), `features` (точно `housing.features.FEATURES`), `model_version` (непустая строка).
 - `metrics.json`: ключи `baseline` и `candidate`; у каждого `validation` и `test` с `mae`, `rmse`.
 - `manifest.json`: seed, data_sha256, versions, parameters, feature_order, split.
 - `split.json`: train/validation/test со списками исходных индексов строк.
 
-После проверки результата выполни `python modules/01-ml/tasks/02-candidate/export.py`: готовый скрипт переносит комплект в `work/artifacts/`, откуда его читают API и контейнеры. Для замены отличающегося результата нужен `--replace`. Самостоятельная реализация обучения по-прежнему обязательна.
+Функция `save_artifacts` в последней ячейке не обучает модель. Она сохраняет подготовленные в памяти результаты; отличающиеся файлы заменяются при явном `replace=True`. API и контейнеры читают `work/artifacts/`. Для повторяемого обучения в пайплайне реализуй `train` в notebook и сохрани файл: `python -m housing.train --data work/housing.csv --output work/runs/example --seed 42`. CLI пишет тот же комплект в переданный каталог.
 
 Канонический порядок: MedInc, HouseAge, AveRooms, AveBedrms, Population, AveOccup, Latitude, Longitude. Target: MedHouseVal, единица — 100000 USD. Сериализуй весь preprocessing вместе с моделью. Не загружай чужой pickle/joblib.
 
@@ -32,6 +32,6 @@ curl -sS http://localhost:8000/predict -H 'Content-Type: application/json' --dat
 
 ## Тесты и заготовки
 
-`python -m pytest labs/housing/tests -v` проверяет готовую HTTP-часть; учебные тесты пропускаются с причиной. `RUN_EXERCISES=1 python -m pytest labs/housing/tests -v` включает задания и должен падать до реализации. Добавляй собственные тесты качества и обработки артефакта; маленькая fixture в тесте pipeline не заменяет оценку California Housing.
+`python -m pytest labs/housing/tests -v` проверяет готовую HTTP-часть. Все проверки упражнений ML запускаются внутри notebook; `make test` их не выполняет. Маленькие синтетические данные не заменяют оценку качества на California Housing.
 
 Docker: `docker compose -f labs/housing/compose.yaml up -d --build`; остановка: та же команда с `down`. Volume с артефактами монтируется только для чтения. Без обученной модели контейнер жив, но не готов к прогнозам.

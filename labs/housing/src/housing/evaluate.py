@@ -1,8 +1,8 @@
-"""Совместимый API: метрики реализуются в modules/01-ml/tasks/01-baseline/solution.py."""
+"""API метрик: определения берутся из сохранённого modules/01-ml/housing.ipynb."""
 
 import numpy as np
-from course_tasks import load_task
+from course_tasks.notebook import housing_notebook_path, load_notebook
 
 
 def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
-    return load_task("01-ml/01-baseline").regression_metrics(y_true, y_pred)
+    return load_notebook(housing_notebook_path()).regression_metrics(y_true, y_pred)

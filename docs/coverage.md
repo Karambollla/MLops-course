@@ -3,7 +3,7 @@
 | Инструмент / тема | Теория и практика | Стартовые файлы | Проверяемый результат |
 |---|---|---|---|
 | Python, NumPy, pandas | [Модуль](../modules/00-python/README.md) · [задания](../modules/00-python/practice.md) | [tasks](../modules/00-python/tasks/) · [labs/python](../labs/python/) | Фильтрация, CLI, тесты и анализ таблицы |
-| scikit-learn и оценка | [Модуль](../modules/01-ml/README.md) · [задания](../modules/01-ml/practice.md) | [tasks](../modules/01-ml/tasks/) · [labs/housing](../labs/housing/) | Baseline, split, MAE/RMSE и Pipeline |
+| scikit-learn и оценка | [Модуль](../modules/01-ml/README.md) · [задания](../modules/01-ml/practice.md) | [notebook](../modules/01-ml/housing.ipynb) · [labs/housing](../labs/housing/) | Baseline, split, MAE/RMSE и Pipeline |
 | DVC и воспроизводимость | [Модуль](../modules/02-reproducibility/README.md) · [задания](../modules/02-reproducibility/practice.md) | [tasks](../modules/02-reproducibility/tasks/) · [labs/housing](../labs/housing/) | Восстановление CSV и manifest |
 | FastAPI, Docker, CI | [Модуль](../modules/03-service-ci/README.md) · [задания](../modules/03-service-ci/practice.md) | [tasks](../modules/03-service-ci/tasks/) · [labs/housing](../labs/housing/) | HTTP-контракт, образ, CI |
 | MLflow | [Модуль](../modules/04-mlflow/README.md) · [задания](../modules/04-mlflow/practice.md) | [tasks](../modules/04-mlflow/tasks/) · [labs/mlflow](../labs/mlflow/) | Runs, registry version и aliases |

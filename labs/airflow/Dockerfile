@@ -10,7 +10,7 @@ RUN /opt/housing-venv/bin/pip wheel --no-cache-dir --no-deps --wheel-dir /tmp/ho
 USER airflow
 
 COPY modules/tasks.json /course/modules/tasks.json
-COPY modules/01-ml/tasks /course/modules/01-ml/tasks
+COPY modules/01-ml/housing.ipynb /course/modules/01-ml/housing.ipynb
 COPY modules/02-reproducibility/tasks /course/modules/02-reproducibility/tasks
 COPY modules/05-airflow/tasks /course/modules/05-airflow/tasks
 ENV MLOPS_COURSE_ROOT=/course

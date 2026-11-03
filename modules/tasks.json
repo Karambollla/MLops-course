@@ -29,33 +29,6 @@
       "entrypoint": null
     },
     {
-      "id": "01-ml/01-baseline",
-      "title": "Baseline",
-      "starter": "solution.py",
-      "tests": "test_task.py",
-      "platform": "cpu",
-      "kind": "exercise",
-      "entrypoint": null
-    },
-    {
-      "id": "01-ml/02-candidate",
-      "title": "Кандидат",
-      "starter": "solution.py",
-      "tests": "test_task.py",
-      "platform": "cpu",
-      "kind": "exercise",
-      "entrypoint": "solution.py"
-    },
-    {
-      "id": "01-ml/03-error-analysis",
-      "title": "Анализ ошибок",
-      "starter": "solution.py",
-      "tests": "test_task.py",
-      "platform": "cpu",
-      "kind": "exercise",
-      "entrypoint": null
-    },
-    {
       "id": "02-reproducibility/01-data-version",
       "title": "Восстановить данные",
       "starter": "solution.py",

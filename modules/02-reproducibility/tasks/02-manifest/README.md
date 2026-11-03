@@ -8,7 +8,7 @@
 
 ## Что готово и что реализовать
 
-Используй четыре артефакта [обучения](../../../01-ml/tasks/02-candidate/README.md) и `sha256_file` из [предыдущей темы](../01-data-version/README.md). Сигнатура `build_manifest` уже задаёт входы; она собирает обязательную структуру. Сведения о коде и источнике дополняют происхождение в программе обучения, но не меняют сигнатуру. `validate_bundle` проверяет доверенный уже загруженный объект и manifest; она не обезвреживает небезопасный pickle.
+Используй четыре артефакта [обучения](../../../01-ml/housing.ipynb) и `sha256_file` из [предыдущей темы](../01-data-version/README.md). Сигнатура `build_manifest` уже задаёт входы; она собирает обязательную структуру. Сведения о коде и источнике дополняют происхождение в программе обучения, но не меняют сигнатуру. `validate_bundle` проверяет доверенный уже загруженный объект и manifest; она не обезвреживает небезопасный pickle.
 
 Пример: после построения манифеста `split["train"]` содержит `[0,1]`. Если вызывающий код затем добавил в исходный список 99, в манифесте должны остаться `[0,1]`. Это проверяет, что результат является снимком. Во втором опыте переставь первые два имени `features`: совпадения множества имён недостаточно, должен возникнуть `ValueError`. Проверка хеша аналогично сверяет ожидаемый вход с `manifest.data_sha256`, а не только наличие непустой строки.
 
@@ -16,13 +16,13 @@
 
 Редактируй `modules/02-reproducibility/tasks/02-manifest/solution.py`. Дополнительные тесты размещай в этой же папке.
 
-`build_manifest(data_path: Path, seed: int, split: dict, versions: dict, parameters: dict) -> dict` включает schema_version=1, seed, data_sha256, split, versions, parameters, feature_order=FEATURES. `validate_bundle(bundle: dict, manifest: dict, expected_sha256: str) -> None` проверяет schema_version=1, pipeline с callable predict, точный features/feature_order и data_sha256, непустой model_version; несовместимость — ValueError. Подключи эти функции к train задания 01-ml/02-candidate. Допиши происхождение: Git commit, либо явное отсутствие Git и checksum исходников; источник CSV, дата, единицы и ограничения. Не сохраняй секреты и абсолютные обязательные пути ноутбука.
+`build_manifest(data_path: Path, seed: int, split: dict, versions: dict, parameters: dict) -> dict` включает schema_version=1, seed, data_sha256, split, versions, parameters, feature_order=FEATURES. `validate_bundle(bundle: dict, manifest: dict, expected_sha256: str) -> None` проверяет schema_version=1, pipeline с callable predict, точный features/feature_order и data_sha256, непустой model_version; несовместимость — ValueError. Подключи эти функции к train в ML-notebook. Допиши происхождение: Git commit, либо явное отсутствие Git и checksum исходников; источник CSV, дата, единицы и ограничения. Не сохраняй секреты и абсолютные обязательные пути ноутбука.
 
 ## Среда и зависимости
 
 Базовая среда из SETUP: Python, pytest; CPU, Linux/macOS.
 
-Зависит от 01-ml/02-candidate и 02-reproducibility/01-data-version. Два реальных запуска сравниваются в следующем задании; bundle загружай только собственный.
+Зависит от ML-notebook модуля 01 и 02-reproducibility/01-data-version. Два реальных запуска сравниваются в следующем задании; bundle загружай только собственный.
 
 ## Запуск и результат
 

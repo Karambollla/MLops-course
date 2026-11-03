@@ -117,9 +117,8 @@ def test_replacements_follow_declared_order_with_model_last(bundle, monkeypatch)
     assert observed == ["metrics.json", "manifest.json", "split.json", "model.joblib"]
 
 
-@pytest.mark.parametrize("task_id", ["01-ml/02-candidate", "15-triton/01-onnx"])
-def test_task_cli_from_another_directory_without_running_solution(tmp_path, task_id):
-    module, slug = task_id.split("/")
+def test_task_cli_from_another_directory_without_running_solution(tmp_path):
+    module, slug = "15-triton", "01-onnx"
     task = tmp_path / "modules" / module / "tasks" / slug
     (task / "output").mkdir(parents=True)
     (tmp_path / "modules/tasks.json").write_text(
@@ -131,16 +130,10 @@ def test_task_cli_from_another_directory_without_running_solution(tmp_path, task
     (task / "solution.py").write_text(
         "raise AssertionError('export must not run the solution')\n"
     )
-    if module == "01-ml":
-        sources = {
-            f"output/{name}": f"artifacts/{name}"
-            for name in ["metrics.json", "manifest.json", "split.json", "model.joblib"]
-        }
-    else:
-        sources = {
-            "config.pbtxt": "triton/model_repository/housing/config.pbtxt",
-            "output/model.onnx": "triton/model_repository/housing/1/model.onnx",
-        }
+    sources = {
+        "config.pbtxt": "triton/model_repository/housing/config.pbtxt",
+        "output/model.onnx": "triton/model_repository/housing/1/model.onnx",
+    }
     for source in sources:
         (task / source).write_bytes(
             b'{"fixture": true}' if source.endswith(".json") else b"fixture bytes"

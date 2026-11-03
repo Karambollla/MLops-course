@@ -33,13 +33,19 @@ port-forward из 01 проверь /predict: HTTP200, model_version равна 
 
 Обучи реальную отличающуюся v2 через собственный housing CLI с новым seed/параметрами.
 Перед заменой сохрани нужные локальные v1 артефакты; старый housing:v1 в kind
-сохрани. Экспортёр читает именно output задания 01-ml/02-candidate и не запускает
-обучение; `--replace` осознанно заменяет общий work/artifacts для следующей сборки.
-Проверь новый bundle перед экспортом.
+сохрани. Для второй версии открой ML-notebook, задай другой seed до обучения,
+выполни эксперимент и финальную ячейку с `replace=True`. Это заменяет комплект
+в `work/artifacts/`; предыдущий файл оставь доступным для отката.
+
+Для отдельного повторного запуска без замены активного комплекта можно использовать CLI:
 
 ```bash
-python -m housing.train --data work/housing.csv --output modules/01-ml/tasks/02-candidate/output --seed 43
-python modules/01-ml/tasks/02-candidate/export.py --replace
+python -m housing.train --data work/housing.csv --output work/runs/second-release --seed 43
+```
+
+После сохранения v2 в `work/artifacts/` собери и установи её:
+
+```bash
 docker build -t housing:v2 -f labs/kubernetes/Dockerfile.model .
 kind load docker-image housing:v2 --name mlops-course
 helm --kube-context "$MLOPS_KUBE_CONTEXT" --namespace "$MLOPS_KUBE_NAMESPACE" upgrade housing-demo modules/08-helm/tasks/01-values/chart -f modules/08-helm/tasks/01-values/values-dev.yaml --set image.tag=v2 --wait --timeout 120s

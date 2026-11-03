@@ -30,14 +30,14 @@ flowchart LR
 1. Скачай CSV через `python -m housing.data --output work/housing.csv`.
 2. Зафиксируй источник, единицы, schema, SHA-256 и правила split 60/20/20.
 3. Выполни baseline и выбор кандидата по validation; test оцени после выбора.
-4. Сохрани bundle, metrics, manifest и split в `output/` задания кандидата по контракту starter. После проверки выполни `python modules/01-ml/tasks/02-candidate/export.py`, чтобы передать комплект в `work/artifacts/` для следующих этапов. Замена предыдущего результата требует `--replace`.
+4. Выполни последнюю ячейку [ML-notebook](../../modules/01-ml/housing.ipynb): готовая функция сохраняет bundle, metrics, manifest и split прямо в `work/artifacts/`. Отличающийся предыдущий результат заменяется только при `replace=True`.
 5. Проверь ошибки по группам; ограничения random split разобраны в модуле ML.
 
 Приёмка: candidate test MAE не больше 0,9 baseline test MAE на одинаковых строках; preprocessing fit только на train. Порог учебный и не является бизнес-SLA. Повторные ручные улучшения по test запрещены: меняй эксперимент на validation, а при исчерпании holdout подготовь новую финальную оценку.
 
 ## Этап 2. Контракт и сервис
 
-1. Включи учебные тесты: `RUN_EXERCISES=1 python -m pytest labs/housing/tests -v`.
+1. Выполни проверочные ячейки ML-notebook, затем `make task TASK=03-service-ci/01-api-contract` для контракта API.
 2. Добавь тесты parity HTTP/Pipeline, испорченного bundle и перестановки входных ключей.
 3. Запусти API с переменной окружения `MODEL_PATH`.
 4. Проверь 200/422/503 и model_version в ответе.

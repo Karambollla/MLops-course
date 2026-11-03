@@ -10,7 +10,7 @@
 
 ## Что должно быть готово
 
-- Собственная реализация `housing.train.train` из [задания кандидата](../../../01-ml/tasks/02-candidate/README.md).
+- Собственная реализация `housing.train.train` из [задания кандидата](../../../01-ml/housing.ipynb).
 - CSV `work/housing.csv`, подготовленный по [SETUP](../../../../SETUP.md).
 - Формат `metrics.json` и `manifest.json` из [контракта проекта](../../../../labs/housing/README.md). В частности, метрики выбранной модели находятся в `candidate.test.mae` и `candidate.test.rmse`.
 

@@ -71,6 +71,8 @@ for folder in modules:
             errors.append(f"{folder.name}: missing {name}")
     if (folder / "README.md").is_file() and "## Материалы" not in (folder / "README.md").read_text():
         errors.append(f"{folder.name}: no annotated sources")
+    if folder.name == "01-ml" and not (folder / "housing.ipynb").is_file():
+        errors.append("01-ml: missing housing.ipynb; run its checks inside the notebook")
 # Technical exercises have starters/tests; guides have examples without fake tests.
 catalog_path = ROOT / "modules" / "tasks.json"
 if not catalog_path.is_file():
@@ -79,10 +81,10 @@ else:
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     tasks = catalog.get("tasks", [])
     identifiers = [task.get("id", "") for task in tasks]
-    if len(tasks) != 53 or len(set(identifiers)) != len(tasks):
-        errors.append("Expected 53 unique tasks")
+    if len(tasks) != 50 or len(set(identifiers)) != len(tasks):
+        errors.append("Expected 50 unique standalone tasks; 01-ml is a notebook")
     actual = {f"{module.name}/{folder.name}" for module in modules
-              for folder in (module / "tasks").glob("[0-9][0-9]-*") if folder.is_dir()}
+              for folder in (module / "tasks").glob("[0-9][0-9]-*") if folder.is_dir() and module.name != "01-ml"}
     if actual != set(identifiers):
         errors.append(f"Task directory/catalog mismatch: {actual.symmetric_difference(identifiers)}")
     for task in tasks:
@@ -117,4 +119,5 @@ if errors:
     print("\n".join(errors))
     sys.exit(1)
 words = sum(len(re.findall(r"\b[\w-]+\b", p.read_text())) for p in markdown)
-print(f"PASS: {len(modules)} modules / 53 topics ({sum(t.get('kind') != 'guide' for t in tasks)} technical, {sum(t.get('kind') == 'guide' for t in tasks)} guides), {len(markdown)} Markdown files, {words} words; local links, fences, UTF-8, Python AST and JSON")
+print(f"PASS: {len(modules)} modules / 50 standalone topics ({sum(t.get('kind') != 'guide' for t in tasks)} technical, {sum(t.get('kind') == 'guide' for t in tasks)} guides), {len(markdown)} Markdown files, {words} words; local links, fences, UTF-8, Python AST and JSON")
+print("01-ml: standalone notebook; run its exercise checks inside housing.ipynb (not covered by make check)")

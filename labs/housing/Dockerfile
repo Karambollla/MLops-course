@@ -5,7 +5,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY labs/housing/src ./src
 RUN pip install --no-cache-dir --no-deps . && useradd --uid 10001 --create-home student
 COPY modules/tasks.json /course/modules/tasks.json
-COPY modules/01-ml/tasks /course/modules/01-ml/tasks
+COPY modules/01-ml/housing.ipynb /course/modules/01-ml/housing.ipynb
 COPY modules/02-reproducibility/tasks /course/modules/02-reproducibility/tasks
 ENV MLOPS_COURSE_ROOT=/course
 USER 10001

@@ -8,7 +8,7 @@
 
 ## Что подготовлено
 
-Нужны реализованный [train кандидата](../../../01-ml/tasks/02-candidate/README.md), манифест и host-файл `work/housing.csv`. Compose отображает его в `/work/housing.csv`; image содержит пакет housing и отдельный ML venv. В `housing_pipeline.py` уже заданы validate_data, вызов ML-процесса и начальные настройки. Реализуй `run_training`, доработай устойчивый ключ и подключи обучение. После правки solution.py пересобери image; DAG-файл монтируется отдельно и обновляется иначе.
+Нужны реализованный [train кандидата](../../../01-ml/housing.ipynb), манифест и host-файл `work/housing.csv`. Compose отображает его в `/work/housing.csv`; image содержит пакет housing и отдельный ML venv. В `housing_pipeline.py` уже заданы validate_data, вызов ML-процесса и начальные настройки. Реализуй `run_training`, доработай устойчивый ключ и подключи обучение. После правки solution.py пересобери image; DAG-файл монтируется отдельно и обновляется иначе.
 
 Если output равен `/work/runs/key-1`, правильный subprocess получает этот путь одним аргументом, выполняет `housing.train` и создаёт четыре файла. Только после их проверки функция возвращает `{"path":"/work/runs/key-1","run_key":"key-1"}`. Если процесс вернул код 1, функция должна сообщить об ошибке, а не выдавать metadata успешного результата. Offline-тест перехватывает subprocess и проверяет контракт; настоящее обучение и статус task подтверждаются отдельно в Airflow.
 
@@ -22,7 +22,7 @@
 
 Базовая среда из SETUP: Python, pytest; CPU, Linux/macOS.
 
-Зависит от 01-ml/02-candidate, манифеста и MLflow. Офлайн-тест перехватывает CLI, реальный DAG проверяй compose list-import-errors/unpause/trigger/list-runs. Docker Desktop и Airflow нужны только для этого. Обучение должно произойти в ML venv, scheduler не импортирует модельные библиотеки.
+Зависит от ML-notebook модуля 01, манифеста и MLflow. Офлайн-тест перехватывает CLI, реальный DAG проверяй compose list-import-errors/unpause/trigger/list-runs. Docker Desktop и Airflow нужны только для этого. Обучение должно произойти в ML venv, scheduler не импортирует модельные библиотеки.
 
 ## Запуск и результат
 

@@ -8,7 +8,7 @@
 
 ## Что нужно подготовить
 
-Нужны собственный [train кандидата](../../../01-ml/tasks/02-candidate/README.md), [манифест](../../../02-reproducibility/tasks/02-manifest/README.md), один `work/housing.csv` и один split. В отдельной среде MLflow SDK должен обращаться к поднятому Compose по `http://127.0.0.1:5001`. Заготовка содержит CLI, импорт `mlflow` в начале файла и проверку наличия SDK. Реализуются `track_experiments` и чистая проверка/выбор `select_candidate`; само наличие импорта ещё не записывает запуск.
+Нужны собственный [train кандидата](../../../01-ml/housing.ipynb), [манифест](../../../02-reproducibility/tasks/02-manifest/README.md), один `work/housing.csv` и один split. В отдельной среде MLflow SDK должен обращаться к поднятому Compose по `http://127.0.0.1:5001`. Заготовка содержит CLI, импорт `mlflow` в начале файла и проверку наличия SDK. Реализуются `track_experiments` и чистая проверка/выбор `select_candidate`; само наличие импорта ещё не записывает запуск.
 
 Внутри `track_experiments` понадобятся `set_tracking_uri`, `set_experiment`, контекст `start_run`, а затем `log_params`, `log_metrics` и `log_artifacts` с результатами собственного обучения. Их назначение и маленький рабочий пример разобраны в [самостоятельном примере SDK](../../README.md#самостоятельный-пример-учёта). Отсутствие необязательного пакета обрабатывается по [общему стандарту импортов](../../../../docs/task-structure.md#импорты).
 

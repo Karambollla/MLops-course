@@ -12,7 +12,7 @@
 
 ## Что приходит из предыдущих модулей
 
-Из [обучения](../01-ml/tasks/02-candidate/README.md) нужны созданная твоим кодом модель и экспорт в `work/artifacts/model.joblib`. **Bundle** здесь — сериализованный словарь с `pipeline`, `features`, `schema_version` и `model_version`, который читает API. Из [Docker](../03-service-ci/README.md) приходят `labs/housing/Dockerfile` и образ `housing:course`. Базовый образ содержит код и зависимости, но не обученную модель. Учёт запусков в [ClearML](../06-clearml/README.md) помогает установить происхождение модели; Kubernetes получает уже выбранный артефакт, а обучение не запускает.
+Из [обучения](../01-ml/housing.ipynb) нужны созданная твоим кодом модель и экспорт в `work/artifacts/model.joblib`. **Bundle** здесь — сериализованный словарь с `pipeline`, `features`, `schema_version` и `model_version`, который читает API. Из [Docker](../03-service-ci/README.md) приходят `labs/housing/Dockerfile` и образ `housing:course`. Базовый образ содержит код и зависимости, но не обученную модель. Учёт запусков в [ClearML](../06-clearml/README.md) помогает установить происхождение модели; Kubernetes получает уже выбранный артефакт, а обучение не запускает.
 
 `labs/housing/request.json` содержит HTTP-вход `instances`: список районов с восемью числовыми признаками, включая доход `MedInc` и координаты. `/predict` возвращает по одному числу на район, `model_version` и единицу target `100000 USD`. Наличие корректного JSON ещё не означает точность прогноза: качество оценивалось отдельно по известным ответам.
 
