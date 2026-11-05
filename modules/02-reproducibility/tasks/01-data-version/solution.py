@@ -6,12 +6,18 @@
 import hashlib
 from pathlib import Path
 
-
 def sha256_file(path: Path, chunk_size: int = 65536) -> str:
-    # TODO: бинарные блоки, без read_bytes для большого файла.
-    raise NotImplementedError("Вычисли SHA-256")
+    if chunk_size <= 0:
+        raise ValueError("chunk_size должен быть больше нуля")
 
+    hasher = hashlib.sha256()
+    with open(path, "rb") as file:
+        while chunk := file.read(chunk_size):
+            hasher.update(chunk)
+
+    return hasher.hexdigest()
 
 def verify_restore(original_hash: str, restored: Path) -> None:
-    # TODO: явный отказ при изменённых данных.
-    raise NotImplementedError("Проверь восстановление")
+    restored_hash = sha256_file(restored)
+    if restored_hash != original_hash:
+        raise ValueError

@@ -7,5 +7,17 @@ import math
 
 
 def summarize(records: list[dict]) -> dict:
-    # TODO: отбор конечных положительных чисел без мутации.
-    raise NotImplementedError("Реализуй summarize")
+    count = 0
+    total = 0.0
+
+    for record in records:
+        val = record.get("duration")
+        if isinstance(val, (int, float)) and not isinstance(val, bool) and 0 < val < float("inf"):
+            count += 1
+            total += val
+
+    if count == 0:
+        return {"count": 0, "mean": None}
+
+    return {"count": count, "mean": total / count}
+

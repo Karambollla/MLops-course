@@ -6,18 +6,32 @@
 from pathlib import Path
 
 import pandas as pd
+from scipy import stats
+
+def describe_frame(frame: pd.DataFrame) -> dict:
+    quantiles = frame.quantile([0.25, 0.5, 0.75], numeric_only=True)
+    quantiles.index = quantiles.index.map(str)
+
+    return {
+        "shape": list([len(frame), len(frame.columns)]),
+        "dtypes": frame.dtypes.to_dict(),
+        "missing": frame.isna().sum().to_dict(),
+        "quantiles": quantiles.to_dict()
+    }
 
 
-def describe_frame(frame) -> dict:
-    # TODO: shape, dtype, пропуски, квантили.
-    raise NotImplementedError("Опиши таблицу")
-
-
-def align_series(left, right) -> tuple:
-    # TODO: явное выравнивание по меткам.
-    raise NotImplementedError("Выровняй индексы")
-
+def align_series(left: pd.Series, right: pd.Series) -> tuple:
+    common = left.index.intersection(right.index, sort=False)
+    return left[common], right[common]
 
 def write_report(csv_path: Path, output: Path) -> None:
-    # TODO: read_csv и Markdown, создание parent directory.
-    raise NotImplementedError("Сохрани сводку")
+    frame = pd.read_csv(csv_path)
+    summary = describe_frame(frame)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    report = "# Сводка данных\n\n"
+    for name, value in summary.items():
+        report += f"## {name}\n\n{value}\n\n"
+
+    output.write_text(report, encoding="utf-8")
