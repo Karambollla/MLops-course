@@ -23,7 +23,7 @@ FEATURES = {
 
 def test_alive_but_not_ready_without_model(tmp_path):
     with TestClient(create_app(tmp_path / "missing.joblib")) as client:
-        assert client.get("/live").status_code == 201
+        assert client.get("/live").status_code == 200
         assert client.get("/ready").status_code == 503
         assert (
             client.post("/predict", json={"instances": [FEATURES]}).status_code == 503
