@@ -1,6 +1,6 @@
 # Elasticsearch: bulk и ошибки
 
-[Теория](../../README.md) · [Практика модуля](../../practice.md) · [Подсказки](../../hints.md)
+[Модуль и подготовка](../../README.md#подготовка-к-заданиям) · [Все задания модуля](../../README.md#задания) · [Окружение курса](../../../../SETUP.md)
 
 ## Какую проблему решает bulk
 
@@ -8,18 +8,106 @@
 
 Предоставлены корпус `labs/search/corpus.json`, запросы/qrels, [mapping.json](mapping.json), `solution.py` и CPU Compose Elasticsearch 8.17.3. Нужны [основное окружение](../../../../SETUP.md) и выполненный модуль 13. Другие тяжёлые стенды и любой сервис на host port 9200 останови до запуска.
 
-## Контракты
+## Документы, mapping и клиент
 
-`build_bulk(documents,index) -> str` сохраняет исходные IDs в `_id` (строка), формирует пары action/source и завершающий `\n`. Source содержит только text/topic/vector. Пустой index и повтор ID — ValueError. `bulk_failures(response) -> list[str]` проверяет каждый item: status>=300 или поле error означает отказ, даже если HTTP 200 и верхний errors=False. На OpenSearch перенеси свою реализацию этих двух функций из первого задания.
+`documents` в функциях ниже — JSON-массив из `labs/search/corpus.json`, уже декодированный через `json.loads`. Один документ имеет вид `{"id":7,"text":"Vault policies restrict secrets","topic":"security","vector":[0,0,0,1]}`. Файл с запросами содержит отдельные `vector` и `relevant`: разметка не загружается в индекс.
 
-Новые SDK-функции — заготовки с NotImplementedError:
+`client` — уже созданный объект SDK `Elasticsearch`. CLI создаёт его по `--url` и закрывает в `finally`. Учебные функции используют переданный клиент и не закрывают его. Не заменяй SDK-вызовы самостоятельными HTTP-запросами.
 
-- `ensure_index(client,index,mapping) -> None`: через indices.exists/create создай отсутствующий индекс; для существующего сравни text/topic/vector и векторные настройки через get_mapping/get_settings. Не удаляй его; несовместимость — ValueError до ingest. Повторный вызов безопасен.
-- `ingest_documents(client,index,documents) -> int`: отправь build_bulk через client.bulk, передай ответ в bulk_failures, при любом отказе выброси ValueError с IDs. Успех — refresh и число успешно загруженных документов. Не полагайся на count или errors вместо items; тело с text-объектом вместо строки даёт настоящий mapper error для ID900 в live-тесте. Повторная загрузка тех же IDs сохраняет count=8.
-- `lexical_search(client,index,text,k=5,topic=None) -> list[dict]`: match по text, size=k, необязательный term по topic внутри query. Пустой text или неверный k — ValueError.
-- `vector_search(client,index,vector,k=2,topic=None,dimension=4) -> list[dict]`: настоящий client.search с нативным kNN и фильтром внутри поиска. Параметры вектора проверяются до сети как в knn_request. В Elasticsearch num_candidates>=k (на этом корпусе достаточно max(8,k)); OpenSearch использует knn_request.
+[Mapping](mapping.json) загружается целиком как `dict`, включая верхние `mappings`. Поле `text` типа `text` анализируется для лексического поиска. `topic` типа `keyword` используется для точного фильтра. `vector` имеет тип `dense_vector`, `dims=4`, `index=true`, `similarity=cosine`.
 
-Оба поиска возвращают список в порядке движка: `{id:int, score:float, payload:{text,topic}}`. IDs нормализуются обратно в int для qrels/RRF. Нет совпадений — []. Переданный client принадлежит вызывающему коду, функции его не закрывают. SDK самостоятельно сериализует запросы: не отправляй HTTP вручную вместо заданных методов.
+## Функции и их входы
+
+### `build_bulk(documents: list[dict], index: str) -> str`
+
+| Параметр | Тип | Формат и смысл | Откуда взять | Пример |
+|---|---|---|---|---|
+| `documents` | `list[dict]` | Документы с устойчивыми `id`, `text`, `topic`, `vector` | Декодированный корпус или маленький тестовый список | `[{"id":7,"text":"Vault","topic":"security","vector":[0,0,0,1]}]` |
+| `index` | `str` | Непустое имя целевого индекса | CLI `--index` или уникальное имя теста | `"course-docs"` |
+
+Верни строку NDJSON из пар action/source, с завершающим переводом строки. Для одного документа форма такая:
+
+```text
+{"index":{"_index":"course-docs","_id":"7"}}
+{"text":"Vault","topic":"security","vector":[0,0,0,1]}
+```
+
+После второй строки нужен `\n`. Это две JSON-строки, а не JSON-массив. `_id` — строка исходного ID, source содержит только `text`, `topic`, `vector`. Экранируй переводы строк в тексте через JSON-сериализацию, чтобы один документ не разорвал NDJSON. Пустое имя индекса и повтор ID вызывают `ValueError`. Сама функция ничего не отправляет серверу.
+
+### `bulk_failures(response: dict) -> list[str]`
+
+| Параметр | Тип | Формат и смысл | Откуда взять | Пример |
+|---|---|---|---|---|
+| `response` | `dict` по сигнатуре | Декодированный ответ bulk с массивом `items`. Каждый item содержит результат операции | Результат `client.bulk` | `{"errors":False,"items":[{"index":{"_id":"7","status":400}}]}` |
+
+Для примера верни `["7"]`. Каждый item со `status>=300` или полем `error` считается неуспешным независимо от верхнего `errors`. Пустые items и полностью успешные операции дают `[]`. Сохрани порядок отказов. В Elasticsearch ответ может быть `ObjectApiResponse`: читай `response["items"]`, используя его интерфейс отображения.
+
+### `ensure_index(client, index: str, mapping: dict) -> None`
+
+| Параметр | Тип | Формат и смысл | Откуда взять | Пример |
+|---|---|---|---|---|
+| `client` | Elasticsearch | Установленное SDK-соединение с выбранным сервером | CLI или вызывающий код | `Elasticsearch("http://127.0.0.1:9200")` |
+| `index` | `str` | Имя создаваемого или проверяемого индекса | CLI `--index` | `"course-docs"` |
+| `mapping` | `dict` | Полное содержимое mapping-файла этого задания | `json.loads(Path(...).read_text())`, CLI `--mapping` | `{"mappings":{"properties":{...}}}` |
+
+Используй `indices.exists/create` для отсутствующего индекса. Для существующего прочитай `get_mapping/get_settings` и сверь `text`, `topic`, `vector` и векторные настройки. У Elasticsearch проверь в частности `dims`, `index` и `similarity` поля `vector`. Несовместимость вызывает `ValueError` до ingest. Нельзя удалять существующий индекс. При успехе верни `None`, повторный вызов не должен менять документы.
+
+### `ingest_documents(client, index: str, documents: list[dict]) -> int`
+
+| Параметр | Тип | Формат и смысл | Откуда взять | Пример |
+|---|---|---|---|---|
+| `client` | Elasticsearch | Клиент для настоящих `bulk` и `indices.refresh` | CLI или вызывающий код | Уже созданный SDK-клиент |
+| `index` | `str` | Имя индекса с совместимым mapping | Результат подготовки через `ensure_index` | `"course-docs"` |
+| `documents` | `list[dict]` | Документы для загрузки с исходными IDs | JSON-корпус, CLI `--corpus` | Восемь объектов из `corpus.json` |
+
+Передай NDJSON из `build_bulk` в `client.bulk`, разбери каждый item через `bulk_failures`. Любой отказ вызывает `ValueError`, в сообщении должны быть IDs отвергнутых документов. Успех требует refresh и возвращает число загруженных документов, для корпуса — `8`. Два ingest исходных IDs оставляют count=8.
+
+Bulk не является транзакцией: ошибка одного item не откатывает успешные items. Live-тест посылает ID900 с объектом вместо строкового `text` и ожидает настоящую mapper error с ID900 в исключении. `HTTP 200`, поле `errors` или итоговый count по отдельности не заменяют разбор каждого item.
+
+### `lexical_search(client, index: str, text: str, k: int = 5, topic: str | None = None) -> list[dict]`
+
+| Параметр | Тип | Формат и смысл | Откуда взять | Пример |
+|---|---|---|---|---|
+| `client` | Elasticsearch | Клиент для `search` | CLI или вызывающий код | Уже созданный SDK-клиент |
+| `index` | `str` | Индекс с загруженными документами | Тот же `--index`, что при ingest | `"course-docs"` |
+| `text` | `str` | Непустой текст для `match` по полю `text` | Пользовательский запрос или CLI `--text` | `"Vault"` |
+| `k` | `int` | Положительное число hits без `bool` | Параметр функции или CLI `--k` | `5` |
+| `topic` | `str` или `None` | Точный `term`-фильтр внутри query | Категория корпуса, CLI `--topic` | `"security"` |
+
+Отправь `match` по text и `size=k` через `client.search`. Необязательный topic ограничивает сам запрос. Пустой text или неверный k дают `ValueError`. Запрос Vault должен включать ID7, тот же запрос с topic=release даёт `[]`.
+
+### `vector_search(client, index: str, vector: list[float], k: int = 2, topic: str | None = None, dimension: int = 4) -> list[dict]`
+
+| Параметр | Тип | Формат и смысл | Откуда взять | Пример |
+|---|---|---|---|---|
+| `client` | Elasticsearch | Клиент для нативного kNN через `search` | CLI или вызывающий код | Уже созданный SDK-клиент |
+| `index` | `str` | Индекс с векторами нужной схемы | Тот же `--index`, что при ingest | `"course-docs"` |
+| `vector` | `list[float]` | Конечный ненулевой вектор длины `dimension` | Запрос из `queries.json` или CLI `--vector` | `[0,0,0,1]` |
+| `k` | `int` | Положительное число соседей без `bool` | CLI `--k` | `2` |
+| `topic` | `str` или `None` | Точное ограничение по теме, до top-k | CLI `--topic` | `"security"` |
+| `dimension` | `int` | Положительная размерность без `bool`, согласованная с mapping | Версия индекса, CLI `--dimension` | `4` |
+
+Неверные `k`, `dimension`, длина, конечность или норма вектора дают `ValueError` до обращения к сети. Используй нативный Elasticsearch kNN с `num_candidates>=k`. Для корпуса достаточно `max(8,k)`. Фильтр помещается в kNN-запрос, а не после top-k.
+
+Оба поиска разбирают `hits.hits` и возвращают список в порядке движка. Форма одного результата: `{"id":7,"score":0.9,"payload":{"text":"...","topic":"security"}}`. Score приведён только как пример типа: у движков разные шкалы. Преобразуй `_id` обратно в `int` для qrels и RRF. Для security-вектора ожидаются IDs 7 и 8 с topic=security. Нет совпадений или topic неизвестен — `[]`.
+
+## Готовый CLI
+
+`main()` уже читает файлы, создаёт SDK-клиент и закрывает его. Выбери обязательное действие: `index`, `lexical` или `vector`.
+
+| Аргумент | Формат и назначение | По умолчанию |
+|---|---|---|
+| `--url` | HTTP-адрес выбранного сервера | `http://127.0.0.1:9200` |
+| `--index` | Имя индекса для любой операции | `course-docs` |
+| `--corpus` | Путь к JSON-массиву документов для `index` | `labs/search/corpus.json` |
+| `--mapping` | Путь к JSON с полным mapping для `index` | `mapping.json` рядом с solution.py |
+| `--text` | Текст для `lexical` | `Vault` |
+| `--vector` | Координаты через пробел для `vector` | `0 0 0 1` |
+| `--k` | Максимум hits. CLI явно передаёт его и в lexical | `2` |
+| `--dimension` | Ожидаемая размерность запроса | `4` |
+| `--topic` | Точная категория поиска | Без фильтра |
+
+При `index` CLI печатает число успешно загруженных документов, при поиске — JSON-список hits. Значение `k=5` относится к прямому вызову `lexical_search` без аргумента k. CLI использует свой default `2`.
 
 ## Запуск
 
@@ -35,17 +123,23 @@ python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py ve
 make task TASK=14-elasticsearch-opensearch/01-elasticsearch
 ```
 
-CLI уже разбирает параметры, создаёт `Elasticsearch` и вызывает функции; SDK-операции реализуешь сам. Исходная заготовка даёт NotImplementedError. `--mapping`, `--corpus`, `--index`, `--url` выбирают вход загрузки; `--k`, `--dimension`, `--topic` задают поиск. Elasticsearch client 8.17.2 и opensearch-py 2.8.0 закреплены в requirements. Без SDK сбор тестов и --help работают; отсутствующий транзитивный dependency не маскируется как отсутствие SDK.
+CLI уже разбирает параметры, создаёт `Elasticsearch` и вызывает функции. SDK-операции реализуешь сам. Исходная заготовка даёт NotImplementedError. `--mapping`, `--corpus`, `--index`, `--url` выбирают вход загрузки. `--k`, `--dimension`, `--topic` задают поиск. Elasticsearch client 8.17.2 и opensearch-py 2.8.0 закреплены в requirements. Без SDK сбор тестов и --help работают. Отсутствующий транзитивный dependency не маскируется как отсутствие SDK.
 
 Ожидаемое поведение настоящей практики: после двух ingest count=8 и payload сохранён, match Vault включает ID7, kNN security возвращает IDs 7/8, неизвестный topic даёт []. Неверная размерность отклоняется до SDK. Live-тест вызывает твою реализацию, затем читает созданный ею индекс и передаёт реальные выдачи в `ranking_metrics` модуля 13 и RRF задания 03: сначала реализуй эти функции.
 
 ```bash
 # Запись только в уникальное тестовое имя; cleanup удаляет только это имя.
 MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 ELASTICSEARCH_URL=http://127.0.0.1:9200 python scripts/run_task.py test 14-elasticsearch-opensearch/01-elasticsearch -- -m writes
-# Прежний read-only probe: course-docs должен быть уже подготовлен.
+# Read-only probe: course-docs должен быть уже подготовлен.
 MLOPS_RUN_INTEGRATION=1 ELASTICSEARCH_URL=http://127.0.0.1:9200 python scripts/run_task.py test 14-elasticsearch-opensearch/01-elasticsearch -- -m 'integration and not writes'
 ```
 
-Записывающий тест требует оба флага, отмечен integration/writes, генерирует UUID-имя и проверяет его отсутствие до работы. Он проверяет mapping, повторный ingest, каждый слой поиска, ошибку bulk item, метрики и RRF; finally удаляет только своё имя. Без флагов он пропускается; при включении недоступный сервер, SDK или незавершённая функция — ошибка, а не skip. Прежний probe только читает course-docs; он не доказывает, что твой импорт работает.
+Записывающий тест требует оба флага, отмечен integration/writes, генерирует UUID-имя и проверяет его отсутствие до работы. Он проверяет mapping, повторный ingest, каждый слой поиска, ошибку bulk item, метрики и RRF. Finally удаляет только своё имя. Без флагов он пропускается. При включении недоступный сервер, SDK или незавершённая функция — ошибка, а не skip. Read-only probe только читает course-docs. Он не доказывает, что твой импорт работает.
 
-Останови активный Compose через down перед запуском другого движка: оба используют host port 9200. Volume сохраняется. Обязательного текстового отчёта нет. Эти команды описывают проверку после реализации; доступность твоего endpoint заранее не предполагается.
+## Остановка
+
+```bash
+docker compose -f labs/search/elasticsearch.compose.yaml down
+```
+
+Volume сохраняется. Перед запуском другого движка освободи порт 9200.

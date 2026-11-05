@@ -1,6 +1,6 @@
 # Gate и повтор
 
-[Практика модуля](../../practice.md) · [Теория](../../README.md) · [Подсказки](../../hints.md) · [SETUP](../../../../SETUP.md)
+[Модуль и подготовка](../../README.md#подготовка-к-заданиям) · [Все задания модуля](../../README.md#задания) · [SETUP](../../../../SETUP.md)
 
 ## Зачем разделять готовую модель и разрешённый выпуск
 
@@ -8,19 +8,70 @@
 
 ## Исходные артефакты и изменения графа
 
-На входе `path`/`run_key` из XCom, `metrics.json` и `model.joblib` того же каталога запуска, а также точная версия модели. В заготовке реализуются чистая оценка gate и файловая публикация; в DAG добавляются отдельные зависимые шаги. В XCom остаются небольшие метаданные, файл модели не передаётся. Если gate-task просто вернёт `False`, Airflow не обязан считать её упавшей: запрет downstream нужно выразить явно, а publish сам проверяет качество до записи.
+На входе `path`/`run_key` из XCom, `metrics.json` и `model.joblib` того же каталога запуска, а также точная версия модели. В заготовке реализуются чистая оценка gate и файловая публикация. В DAG добавляются отдельные зависимые шаги. В XCom остаются небольшие метаданные, файл модели не передаётся. Если gate-task просто вернёт `False`, Airflow не обязан считать её упавшей: запрет downstream нужно выразить явно, а publish сам проверяет качество до записи.
 
 При baseline=1.0 и candidate=0.8 gate пропускает выпуск. Первый publish для key-1/version 7 сохраняет один manifest, второй с теми же значениями возвращает его без изменения файла. Попытка version 8 под key-1 даёт конфликт. При candidate=1.1 release не создаётся вовсе. Так проверяются три разных свойства: критерий качества, идемпотентность повтора и защита от подмены содержимого под прежним ключом.
 
-## Где работать и контракт
+## Где работать
 
-Редактируй `modules/05-airflow/tasks/02-gate-retry/solution.py`. Дополнительные тесты размещай в этой же папке.
+Реализуй функции в [solution.py](solution.py) и подключи их к отдельным `gate`/`publish` tasks [DAG](../01-pipeline/housing_pipeline.py). [test_task.py](test_task.py) проверяет файловый контракт без Airflow. [test_airflow.py](test_airflow.py) читает состояние настоящих запусков.
 
-`quality_gate(metrics_path: Path, ratio: float = .9) -> bool`: читает реальные candidate.test.mae и baseline.test.mae, конечные неотрицательные числа, bool запрещён; baseline > 0; иначе ValueError. Возвращает candidate/baseline <= ratio. `publish(run_key: str, model_path: Path, version: str, release_dir: Path, metrics_path: Path) -> dict`: gate false → ValueError и никакого release. Иначе атомарно сохраняет release_dir/run_key.json с run_key/model_path/version; model_path должен существовать. Повтор того же ключа и тех же значений возвращает прежний manifest без новой публикации; конфликт ключа с другой версией/путём — ValueError. Безопасный run_key: только буквы/цифры/._-, без . или ..; нельзя выходить за release_dir. Подключи отдельные gate/publish tasks к DAG; обучай в отдельной папке запуска. На стенде запусти один run_key дважды и сравни точную версию и число результатов.
+## `quality_gate`: проверить измеренную ошибку
+
+```python
+def quality_gate(metrics_path: Path, ratio: float = 0.9) -> bool:
+    ...
+```
+
+| Параметр | Тип | Формат и смысл | Откуда берётся | Пример |
+|---|---|---|---|---|
+| `metrics_path` | `Path` | Существующий JSON с `candidate.test.mae` и `baseline.test.mae` | Каталог обучения из `metadata["path"]` | `Path("/work/runs/key-1/metrics.json")` |
+| `ratio` | `float`, по умолчанию `0.9` | Максимальное отношение ошибки кандидата к baseline | Политика допуска вызывающего кода | `0.5` требует двукратного улучшения |
+
+Минимальный вход файла:
+
+```json
+{"candidate": {"test": {"mae": 0.9}}, "baseline": {"test": {"mae": 1.0}}}
+```
+
+MAE должны быть конечными неотрицательными числами. Baseline дополнительно строго больше нуля, чтобы деление было определено. `bool`, числовая строка, `null`, NaN и Infinity не являются допустимыми метриками. Такие значения вызывают `ValueError`.
+
+Для корректных чисел результат — Python `bool`: `candidate / baseline <= ratio`. С файлом выше возвращается `True`, при candidate MAE `0.90001` — `False`. При `ratio=0.5`, baseline `2.0`, candidate `1.0` результат `True`. Порог включителен. Недостаточное качество отличается от неверного измерения: первое даёт `False`, второе — ошибку.
+
+## `publish`: закрепить допущенный результат
+
+```python
+def publish(
+    run_key: str, model_path: Path, version: str, release_dir: Path, metrics_path: Path
+) -> dict:
+    ...
+```
+
+| Параметр | Тип | Формат и смысл | Откуда берётся | Пример |
+|---|---|---|---|---|
+| `run_key` | `str` | Устойчивый ключ и безопасное имя JSON. Только буквы, цифры, `.`, `_`, `-`, исключая пустую строку, `.` и `..` | Metadata обучения | `"key-1"`, `"a.b-c_9"` |
+| `model_path` | `Path` | Существующий файл модели того же запуска | `metadata["path"]` плюс `model.joblib` | `Path("/work/runs/key-1/model.joblib")` |
+| `version` | `str` | Точная версия выпуска, а не изменяемый alias | Выбор версии твоим кодом публикации | `"7"` |
+| `release_dir` | `Path` | Каталог release manifests | Конфигурация твоего DAG | `Path("/work/releases")` |
+| `metrics_path` | `Path` | Метрики той же модели для повторной проверки gate перед записью | Каталог обучения | `Path("/work/runs/key-1/metrics.json")` |
+
+Функция сначала проверяет качество. Если gate не пройден, нужен `ValueError` и отсутствие release. При отсутствии модели допустимы `FileNotFoundError` или `ValueError`. Ключи `../escape`, `a/b`, `a\\b` и `key space` отвергаются через `ValueError`, чтобы не выйти за каталог публикации.
+
+Успешный вызов для примеров выше возвращает:
+
+```json
+{"run_key": "key-1", "model_path": "/work/runs/key-1/model.joblib", "version": "7"}
+```
+
+Тот же объект атомарно сохраняется в `/work/releases/key-1.json`. При повторе с теми же ключом, путём и версией возвращается прежний manifest, а его байты остаются неизменными. Другая версия или путь под тем же ключом — конфликт с `ValueError`. Старый выпуск нельзя перезаписать. Ошибка атомарной замены пробрасывается, неполный новый manifest не должен остаться. Локальная атомарность не гарантирует exactly once внешнего Registry или защиту от всех конкурентных писателей.
+
+## Подключение к графу
+
+Если gate-task просто возвращает `False`, Airflow может считать её успешной. Вырази блокировку downstream явно в теле task. Публикация повторно проверяет файл метрик до записи. Между tasks передавай только небольшие metadata. В реальном DAG сравни два вызова для одного `run_key`: точная версия и число release-файлов должны остаться прежними.
 
 ## Среда и зависимости
 
-Базовая среда из SETUP: Python, pytest; CPU, Linux/macOS.
+Для быстрых проверок используй основную среду Python с pytest из [SETUP](../../../../SETUP.md#основная-среда). Функции работают на CPU под Linux/macOS.
 
 Зависит от 05-airflow/01-pipeline. Офлайн-тесты проверяют реальные файлы metrics/release и отсутствие side effect. Приёмка стенда отдельно: XCom metadata, плохая модель не published, два запуска дают одну версию. Локальная атомарность не гарантирует exactly-once внешнего Registry.
 
@@ -32,9 +83,9 @@
 make task TASK=05-airflow/02-gate-retry
 ```
 
-Тесты функций работают offline на маленьких входах и временных файлах. До реализации ожидается `NotImplementedError`; ошибка импорта означает проблему подготовки среды. Проверка функций не заменяет описанный опыт на данных или стенде.
+Тесты функций работают offline на маленьких входах и временных файлах. До реализации ожидается `NotImplementedError`. Ошибка импорта означает проблему подготовки среды. Проверка функций не заменяет описанный опыт на данных или стенде.
 
-Это задание использует функции; импортируй заготовку через `course_tasks.load_task("05-airflow/02-gate-retry")` из Python. CLI не требуется.
+Это задание использует функции. Импортируй заготовку через `course_tasks.load_task("05-airflow/02-gate-retry")` из Python. CLI не требуется.
 
 ## Требования практического опыта
 
@@ -44,11 +95,11 @@ Gate читает candidate.test.mae и baseline.test.mae из metrics.json. П�
 
 Запусти указанную выше команду `make task` после реализации и исправления ошибок. Проверяемые случаи перечислены в соседнем `test_task.py`.
 
-После опыта останови стенд: `docker compose -f labs/airflow/compose.yaml down`. Не удаляй volume без экспорта истории; артефакты `work/` сохрани для следующих модулей.
+После опыта останови стенд: `docker compose -f labs/airflow/compose.yaml down`. Не удаляй volume без экспорта истории. Артефакты `work/` сохрани для следующих модулей.
 
 ## Пример корректного результата
 
-При baseline MAE=1.0 и candidate MAE=0.9 gate возвращает true, при 0.90001 — false. Два publish с тем же run_key и версией оставляют один release-файл. Конфликт версии вызывает ValueError; провал gate не создаёт release.
+При baseline MAE=1.0 и candidate MAE=0.9 gate возвращает true, при 0.90001 — false. Два publish с тем же run_key и версией оставляют один release-файл. Конфликт версии вызывает ValueError. Провал gate не создаёт release.
 
 ## Обязательный опыт в Airflow
 
@@ -56,9 +107,9 @@ Gate читает candidate.test.mae и baseline.test.mae из metrics.json. П�
 выполни DAG настоящим Airflow 3.1.0. Быстрый тест с подменой `subprocess.run`
 проверяет только CLI-обвязку и не засчитывается за этот опыт.
 
-Критерии: конкретные task instances validate/train/gate/publish видны в UI;
-XCom train содержит только `path` и `run_key`; скачанный/прочитанный artifact
-существует и соответствует этому run_key; плохой gate не оставляет release;
+Критерии: конкретные task instances validate/train/gate/publish видны в UI.
+XCom train содержит только `path` и `run_key`. Скачанный/прочитанный artifact
+существует и соответствует этому run_key. Плохой gate не оставляет release.
 повтор одного run_key после injected failure даёт один manifest с той же точной
 version. Сравни файл/число release до и после retry, а также task ID, DAG run ID,
 attempt и исходный artifact path в реальных логах. В UI повторяй только свой
@@ -73,4 +124,4 @@ mock-объект task instance этого не доказывают.
 MLOPS_RUN_INTEGRATION=1 AIRFLOW_ACCEPTANCE_RUN_ID='свой-run-id' AIRFLOW_EXPECT_GATE=pass python scripts/run_task.py test 05-airflow/02-gate-retry -- -m integration
 ```
 
-Тест только читает task instances через локальный Airflow контейнер и проверяет состояния `validate_data`, `train_evaluate`, `gate`, `publish`. Для отдельного запуска с плохой моделью задай `AIRFLOW_EXPECT_GATE=reject`: publish должен оказаться skipped/upstream_failed. Для опыта с повтором публикации укажи успешный run и `AIRFLOW_MIN_PUBLISH_ATTEMPTS=2`; проверь также прежний run_key и один release на диске. Подготовку сбоя и retry выполняешь ты; тест не запускает и не очищает DAG.
+Тест только читает task instances через локальный Airflow контейнер и проверяет состояния `validate_data`, `train_evaluate`, `gate`, `publish`. Для отдельного запуска с плохой моделью задай `AIRFLOW_EXPECT_GATE=reject`: publish должен оказаться skipped/upstream_failed. Для опыта с повтором публикации укажи успешный run и `AIRFLOW_MIN_PUBLISH_ATTEMPTS=2`. Проверь также прежний run_key и один release на диске. Подготовку сбоя и retry выполняешь ты. Тест не запускает и не очищает DAG.

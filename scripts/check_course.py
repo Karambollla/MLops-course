@@ -66,11 +66,14 @@ modules = sorted((ROOT / "modules").glob("[0-9][0-9]-*"))
 if len(modules) != 18 or [p.name[:2] for p in modules] != [f"{i:02d}" for i in range(18)]:
     errors.append("Expected exactly 18 ordered modules 00–17")
 for folder in modules:
-    for name in ["README.md", "practice.md", "hints.md"]:
-        if not (folder / name).is_file():
-            errors.append(f"{folder.name}: missing {name}")
-    if (folder / "README.md").is_file() and "## Материалы" not in (folder / "README.md").read_text():
-        errors.append(f"{folder.name}: no annotated sources")
+    module_readme = folder / "README.md"
+    if not module_readme.is_file():
+        errors.append(f"{folder.name}: missing README.md")
+    else:
+        text = module_readme.read_text()
+        for heading in ["## Подготовка к заданиям", "## Задания", "## Материалы"]:
+            if heading not in text.splitlines():
+                errors.append(f"{folder.name}: missing section {heading}")
     if folder.name == "01-ml" and not (folder / "housing.ipynb").is_file():
         errors.append("01-ml: missing housing.ipynb; run its checks inside the notebook")
 # Technical exercises have starters/tests; guides have examples without fake tests.
@@ -112,8 +115,9 @@ else:
         entrypoint = task.get("entrypoint")
         if entrypoint and not (directory / entrypoint).is_file():
             errors.append(f"{task['id']}: missing entrypoint {entrypoint}")
-        if f"tasks/{parts[1]}/README.md" not in (directory.parent.parent / "practice.md").read_text():
-            errors.append(f"{task['id']}: not linked from practice.md")
+        index = directory.parent.parent / "README.md"
+        if index.is_file() and f"tasks/{parts[1]}/README.md" not in index.read_text():
+            errors.append(f"{task['id']}: not linked from README.md")
 
 if errors:
     print("\n".join(errors))
