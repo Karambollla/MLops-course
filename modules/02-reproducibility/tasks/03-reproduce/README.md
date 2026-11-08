@@ -60,7 +60,44 @@ make task TASK=02-reproducibility/03-reproduce
 
 ## Повторное обучение
 
-Сохрани окружение и команды так, чтобы новая временная директория получала те же данные, split и метрики в пределах допуска. Добавь отрицательную проверку: изменённый SHA-256 или другой порядок признаков не должен незаметно обслуживаться как прежняя модель.
+Сначала заверши предыдущие функции и сохрани notebook. Проверь, что восстановленный CSV имеет нужный SHA-256. Далее выполняй команды из корня курса в активной исходной среде:
+
+```bash
+python -m pip freeze --exclude-editable > work/reproduce-requirements.txt
+python -m housing.train --data work/housing.csv --output work/runs/original --seed 42
+```
+
+Файл зависимостей описывает фактическую среду. Editable-пакет курса устанавливается отдельно, чтобы не закреплять в файле абсолютный путь твоей рабочей копии.
+
+Теперь создай новую среду для повторения. Если `.venv-reproduce` уже существует, используй её только после сверки установленных зависимостей либо выбери другую новую папку. Это отдельный проверочный опыт, а не повторная установка основной среды:
+
+```bash
+python -m venv .venv-reproduce
+deactivate
+source .venv-reproduce/bin/activate
+python -m pip install -r work/reproduce-requirements.txt
+python -m pip install --no-deps -e labs/housing
+python -m housing.train --data work/housing.csv --output work/runs/restored --seed 42
+```
+
+Во второй папке должен находиться результат нового обучения. Затем передай обе папки и один batch своей функции:
+
+```python
+from pathlib import Path
+
+import pandas as pd
+from course_tasks import load_task
+from housing.features import FEATURES
+
+reproduction = load_task("02-reproducibility/03-reproduce")
+batch = pd.read_csv("work/housing.csv").loc[:, FEATURES].iloc[:20]
+result = reproduction.compare_runs(
+    Path("work/runs/original"), Path("work/runs/restored"), batch,
+)
+print(result)
+```
+
+При одинаковом происхождении ожидаются близкие прогнозы и метрики. Если отличаются хеш, настройки или split, исправлять допуск бессмысленно: сначала восстанови нужные входы. Ошибочный порядок признаков проверяется отдельно и не должен автоматически исправляться внутри функции.
 
 ## Пример корректного результата
 

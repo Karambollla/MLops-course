@@ -2,13 +2,15 @@
 
 [Модуль](../../README.md) · [Задания](../../README.md#задания) · [Общая подготовка](../../README.md#подготовка-к-заданиям)
 
-## Что уже подготовлено
+## Что предстоит сделать
 
-HTTP-инструментация housing API считает ответы и длительности. Compose запускает API, Prometheus и Grafana. В [solution.py](solution.py) оставлены две учебные функции с импортами HTTP-клиента, `perf_counter`, `ThreadPoolExecutor` и NumPy. [scenario.json](scenario.json) содержит фиксированные измерения для теста расчётов. Он не является результатом обращения к твоему API. [dashboard.json](dashboard.json) содержит заголовок и пустой список панелей.
+Housing API отвечает на отдельный запрос, но неизвестно, как изменится обслуживание при нескольких одновременных клиентах. Нужно измерить количество ответов за время, долю серверных ошибок и медленные ответы, затем найти тот же трафик в Prometheus. Ты напишешь расчёт сводки и настоящий HTTP-клиент нагрузки, после чего настроишь панели Grafana.
 
-Увеличение concurrency, числа одновременно выполняемых запросов, может поднять throughput и ухудшить хвост задержек. Ты сначала рассчитываешь сводку готовых измерений, затем создаёшь настоящую нагрузку и сравниваешь её с dashboard. Прочти [путь метрики](../../README.md#путь-запроса-и-путь-метрики) и [формулы PromQL](../../README.md#счётчики-длительность-и-запросы).
+В [solution.py](solution.py) оставлены две функции с готовыми импортами HTTP-клиента, `perf_counter`, `ThreadPoolExecutor` и NumPy. API уже считает ответы и длительности. [scenario.json](scenario.json) содержит фиксированные измерения для теста расчётов, а не результат твоего API. [dashboard.json](dashboard.json) содержит заголовок и пустой список панелей: их предстоит добавить.
 
-## Расчёт сводки: `summarize_run`
+Сначала выполни расчёт на фиксированных входах. Затем переходи к [пути метрики](../../README.md#путь-запроса-и-путь-метрики), [PromQL](../../README.md#счётчики-длительность-и-запросы) и настоящему стенду. Количество одновременных запросов называется **concurrency**. Его увеличение может поднять число ответов в секунду, но также увеличить время ожидания.
+
+## Шаг 1. Рассчитать сводку: `summarize_run`
 
 Точная сигнатура заготовки:
 
@@ -41,7 +43,7 @@ def summarize_run(run):
 
 Для первого run в scenario ожидается `{"rps": 20, "error_ratio": 0.05, "p95_seconds": 0.08}`. Для второго — `{"rps": 50, "error_ratio": 0, "p95_seconds": 0.1}`. Это примеры результата, а не реализация.
 
-## Реальные измерения: `measure_load`
+## Шаг 2. Получить измерения: `measure_load`
 
 ```python
 def measure_load(
@@ -98,15 +100,37 @@ MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 HOUSING_URL=http://127.0.0.1:8000 PRO
 
 `HOUSING_URL` — базовый адрес API без `/predict`, его добавляет сам live-тест. `PROMETHEUS_URL` — базовый адрес Prometheus на компьютере. [test_live.py](test_live.py) вызывает твою функцию с `requests=24, concurrency=2`, проверяет 24 статуса 200, p95 по длительностям и увеличение `http_requests_total{route="/predict"}` после scrape. Тест создаёт реальный трафик и требует оба флага. Не запускай его одновременно с другими нагрузочными опытами.
 
-Затем измерь по 200 запросов с concurrency 1 и 4 своей функцией. Например, 200 ответов за 10 секунд дают 20 RPS. Сохрани длительности, counts и сводки. Это полезные исходные измерения, не отдельный письменный отчёт.
+Затем вызови свою функцию для двух серий по 200 запросов, с concurrency 1 и 4. У `solution.py` нет CLI. Из корня курса можно загрузить определения через `runpy`:
+
+```python
+import json
+import runpy
+from pathlib import Path
+
+functions = runpy.run_path("modules/09-monitoring/tasks/01-load-dashboard/solution.py")
+payload = json.loads(Path("labs/housing/request.json").read_text())
+for concurrency in (1, 4):
+    run = functions["measure_load"](
+        "http://127.0.0.1:8000/predict", payload,
+        requests=200, concurrency=concurrency,
+    )
+    print(concurrency, functions["summarize_run"](run))
+    Path(f"work/monitoring-load-{concurrency}.json").write_text(
+        json.dumps(run, ensure_ascii=False), encoding="utf-8",
+    )
+```
+
+Этот фрагмент отправляет реальный трафик. Числа должны быть измерены твоим клиентом. Например, 200 ответов за 10 секунд дают 20 RPS. Сохранённые длительности позволяют перепроверить p95. Один HTTP-запрос может прогнозировать несколько районов, поэтому RPS здесь не равен числу прогнозов в секунду.
 
 ## Dashboard
 
-Редактируй `dashboard.json`: добавь панели latency и error ratio и импортируй JSON в Grafana на порту 3000. Поле `title` задаёт имя dashboard, `panels` — описания панелей с PromQL-запросами. В Grafana выбери provisioned datasource Prometheus (`http://prometheus:9090` внутри сети Compose). Локальный вход — `student` / `local-course-only`.
+Теперь нужно видеть не только две клиентские сводки, но и изменение обслуживания во времени. Импортируй заготовку `dashboard.json` в Grafana на порту 3000. В ней `title` задаёт имя dashboard, а `panels` пока пуст. В редакторе dashboard добавь три визуализации: RPS, p95 latency и error ratio. Для каждой выбери готовый datasource Prometheus и введи PromQL-запрос из главы. Локальный вход — `student` / `local-course-only`.
+
+Datasource обращается к `http://prometheus:9090` внутри сети Compose. Для latency выбери единицу seconds, для доли ошибок — долю с отображением в процентах. Не считай `0.05` за `0.05%`: это 5%. Сохрани dashboard и экспортируй его JSON поверх task-local `dashboard.json`: теперь поле `panels` должно содержать настройки трёх панелей. Так не нужно вручную угадывать служебную схему JSON Grafana.
 
 Для RPS используй rate счётчика `/predict`. Для 5xx/all — отношение rates за одинаковое окно. Для p95 — `histogram_quantile` по объединённым buckets с сохранением `le`. Полные запросы разобраны в [теории](../../README.md#счётчики-длительность-и-запросы). Не усредняй p95 экземпляров и исключи `/metrics` из бизнес-RPS.
 
-Подожди несколько scrape intervals: rate требует нескольких samples. Клиент измеряет конкретную серию, Prometheus оценивает скользящее окно, а histogram даёт приближение по buckets. Поэтому числа могут различаться. Тест нагрузки не проверяет настройку панелей. Экспортируй свой dashboard JSON перед удалением Grafana volume.
+Подожди несколько scrape intervals: rate требует нескольких samples. Клиент измеряет конкретную серию, Prometheus оценивает скользящее окно, а histogram даёт приближение по buckets. Поэтому числа могут различаться. Тест нагрузки не проверяет панели. Открой диапазон времени, включающий обе серии: должны появиться запросы `/predict`. При корректных запросах и готовой модели доля 5xx равна нулю, а p95 имеет единицу seconds. Если данных нет, сначала проверь `/targets`, затем datasource и селекторы. После настройки экспортируй dashboard обратно в task-local `dashboard.json`, особенно перед удалением Grafana volume.
 
 ## Остановка
 

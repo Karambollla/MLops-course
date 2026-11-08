@@ -1,64 +1,77 @@
-# Два запуска Ansible
+# Два применения одной настройки
 
-[Модуль](../../README.md) · [Задания](../../README.md#задания) · [Общая подготовка](../../README.md#подготовка-к-заданиям)
+[Модуль](../../README.md) · [Подготовка](../../README.md#подготовка-к-заданиям) · [Все задания](../../README.md#задания)
 
-## Зачем смотреть два запуска
+## Что предстоит сделать
 
-Первый успешный playbook создаёт конфигурацию, второй показывает, нужна ли повторная запись при тех же входах. Это полезно для автоматической настройки: случайный перезапуск или дописывание строки при каждом применении создавали бы ненужное изменение работающего узла.
+Нужно доставить один env-файл и убедиться, что повтор не переписывает его без причины. Первый запуск показывает получение нужного состояния, второй — поведение при тех же входах. Ты выполнишь готовый playbook дважды и напишешь функции разбора сводки Ansible.
 
-Task-local playbook уже создаёт каталог и пишет учебный env-файл. Controller и managed node находятся внутри одного контейнера, файлы сохраняются в `work/ansible`. Ты реализуешь разбор результата в Python. Тесты не запускают Ansible. Место выполнения объясняется в [inventory и module](../../README.md#controller-inventory-play-и-module), смысл счётчиков — в [PLAY RECAP](../../README.md#что-означают-changed-и-play-recap).
+В [playbook.yaml](playbook.yaml) уже есть создание каталога и запись `housing.env` через `copy`. [inventory.ini](inventory.ini) выбирает локальный узел контейнера. [compose.yaml](compose.yaml) сохраняет результаты в `work/ansible`. Настоящий Housing API не запускается. Место выполнения объясняется в [главе](../../README.md#controller-inventory-play-и-module).
 
-## Входы функций
+Редактируй только две заготовки в [solution.py](solution.py). TODO в готовом playbook относится к последующей теме: здесь template и handler добавлять не нужно, они реализуются в отдельном задании 02.
+
+## Шаг 1. Разобрать сводку одного запуска
+
+После списка задач Ansible печатает `PLAY RECAP` — результаты по каждому узлу. Например:
+
+```text
+PLAY RECAP ***
+localhost : ok=2 changed=2 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
+```
+
+Здесь `localhost` — имя узла inventory, `changed=2` — две задачи изменили состояние. Смысл всех счётчиков, включая то, что `ok` включает изменившие состояние задачи, разобран в [главе о recap](../../README.md#что-означают-changed-и-play-recap).
 
 ```python
 def parse_recap(text: str) -> dict[str, dict[str, int]]:
     ...
-
-def compare_runs(first: str, second: str) -> dict:
-    ...
 ```
 
-| Функция и аргумент | Тип и формат | Откуда берётся и зачем нужен | Пример |
-|---|---|---|---|
-| `parse_recap`: `text` | `str`, полный stdout Ansible с секцией PLAY RECAP | Фиксированный текст в тестах или содержимое сохранённого вывода ручного playbook | Строка PLAY RECAP и строка `localhost : ok=2 changed=0 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0` |
-| `compare_runs`: `first` | `str`, текст первого запуска, ещё не dict | Первый исходный вывод. Проверяется успешность всех hosts | Recap с `changed=2` |
-| `compare_runs`: `second` | `str`, текст повторного запуска | Второй исходный вывод с теми же hosts. Изменений при повторе быть не должно | Recap тех же hosts с `changed=0` |
-
-`parse_recap` извлекает host и семь целочисленных счётчиков: `ok`, `changed`, `unreachable`, `failed`, `skipped`, `rescued`, `ignored`. Текст задач до recap не является сводкой. Для одной строки выше результат имеет форму:
+`text` — полный stdout одного запуска Ansible, строка. Функция извлекает только recap: task output до него не заменяет сводку. Верни словарь host → семь целочисленных счётчиков `ok`, `changed`, `unreachable`, `failed`, `skipped`, `rescued`, `ignored`. Для примера выше:
 
 ```python
 {
     "localhost": {
-        "ok": 2, "changed": 0, "unreachable": 0, "failed": 0,
+        "ok": 2, "changed": 2, "unreachable": 0, "failed": 0,
         "skipped": 0, "rescued": 0, "ignored": 0,
     }
 }
 ```
 
-В многоузловом выводе будет отдельный ключ каждого host, например `node-a` и `node_b`. Parser не запускает Ansible и не требует, чтобы changed был нулевым. Отсутствие recap или пустой вывод дают `ValueError`.
+Обработай и несколько hosts, например `node-a`, `node_b`. Пустой текст или отсутствие recap дают `ValueError`. Сам parser не требует `changed=0`: первый успешный запуск вправе менять файлы.
 
-`compare_runs` принимает два текста, вызывает разбор и сравнивает результаты. Требуются одинаковые множества hosts, `failed=unreachable=0` у каждого host в обоих запусках и `changed=0` во втором. Порядок строк hosts не важен. Первый запуск уже может иметь `changed=0`, если файлы существовали. При успехе верни `{"localhost": 0}` либо такую же карту для всех hosts. Нарушения дают `ValueError`. Смысл остальных счётчиков разобран в [PLAY RECAP](../../README.md#что-означают-changed-и-play-recap).
+## Шаг 2. Сравнить два запуска
 
-## Реализация и запуск
+```python
+def compare_runs(first: str, second: str) -> dict:
+    ...
+```
 
-Реализуй две функции в `solution.py`. Подготовь controller по [инструкции модуля](../../README.md#подготовка-к-заданиям), затем выполни playbook дважды с одинаковыми входами:
+`first` и `second` — исходные тексты двух запусков, ещё не словари. Разбери оба через `parse_recap` и проверь:
+
+- Множества hosts совпадают. Порядок строк не важен.
+- У каждого host в обоих запусках `failed=0` и `unreachable=0`.
+- У каждого host во втором запуске `changed=0`.
+
+При успехе верни карту host → changed второго запуска, например `{"localhost": 0}`. Любое нарушение даёт `ValueError`. Первый запуск тоже может иметь `changed=0`, если нужный файл уже существует. Функция проверяет текст, а происхождение и реальные побочные эффекты наблюдаются отдельно.
+
+Проверь функции на фиксированных входах без Ansible и Docker:
 
 ```bash
-docker compose -f modules/12-ansible/tasks/01-idempotency/compose.yaml run --rm controller
-docker compose -f modules/12-ansible/tasks/01-idempotency/compose.yaml run --rm controller
 make task TASK=12-ansible/01-idempotency
 ```
 
-Первый создаёт work/ansible/config/housing.env. Второй показывает changed=0, failed=0, unreachable=0. Если файл уже существовал, первый тоже может быть no-op. Parser проверяется на фиксированном тексте. Тест не запускает playbook. Для собственного вывода CLI принимает пути двух сохранённых recap.
+До реализации ожидается `NotImplementedError`. Тесты включают многоузловой вывод, ошибки любого host и CLI с путями, содержащими пробелы.
 
-## Собственный вывод и CLI
+## Шаг 3. Получить настоящий вывод
 
-Compose первого задания уже содержит рабочий playbook с созданием каталога и copy. Python-функции редактируй в `solution.py`. Учебный TODO в playbook не нужен для тестов parser: template и handler реализуются в отдельном задании 02.
-
-Сохрани stdout двух реальных запусков, например в `work/ansible/first.txt` и `work/ansible/second.txt`. CLI принимает два пути из корня курса и читает их как текст:
+Подготовь controller по [инструкции модуля](../../README.md#подготовка-к-заданиям). Каталог `work/ansible` должен существовать до перенаправления stdout. Сохрани два запуска с одинаковыми входами:
 
 ```bash
+docker compose -f modules/12-ansible/tasks/01-idempotency/compose.yaml run --rm controller > work/ansible/first.txt
+docker compose -f modules/12-ansible/tasks/01-idempotency/compose.yaml run --rm controller > work/ansible/second.txt
 python modules/12-ansible/tasks/01-idempotency/solution.py work/ansible/first.txt work/ansible/second.txt
 ```
 
-Пути с пробелами заключай в кавычки. CLI возвращает JSON host→changed второго запуска. Проверки Python не подтверждают происхождение текста, поэтому отдельно наблюдай реальный файл `work/ansible/config/housing.env`. Остановка controller и сохранение bind mount описаны в [очистке модуля](../../README.md#остановка-и-очистка).
+CLI принимает два обязательных пути, читает файлы как текст и печатает JSON результата `compare_runs`. Ожидается `{"localhost": 0}`. Посмотри оба сохранённых recap и файл `work/ansible/config/housing.env`: он содержит `MODEL_PATH=/models/model.joblib` и `WORKERS=1`. Повторный controller видит файл предыдущего запуска благодаря bind mount, хотя сам контейнер одноразовый.
+
+Если второй запуск сообщает изменение, сначала сравни фактические файлы и права. Подмена вывода на `changed=0` не проверяет идемпотентность. `run --rm` удаляет завершившийся controller, а результаты остаются в `work/ansible`. Команда остановки — в [очистке модуля](../../README.md#остановка-и-очистка).

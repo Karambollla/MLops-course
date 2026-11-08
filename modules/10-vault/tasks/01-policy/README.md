@@ -1,12 +1,20 @@
-# Минимальные права: Python SDK Vault
+# Прочитать один ключ через Vault SDK
 
-[Модуль](../../README.md) · [Задания](../../README.md#задания) · [Общая подготовка](../../README.md#подготовка-к-заданиям)
+[Модуль](../../README.md) · [Подготовка](../../README.md#подготовка-к-заданиям) · [Все задания](../../README.md#задания)
 
-## Подготовка и рабочие файлы
+## Что предстоит сделать
 
-Общая [подготовка dev Vault](../../README.md#подготовка-к-заданиям) включает основной Python, установку `hvac==2.3.0`, создание секрета и загрузку policy. Начни с `solution.py` и `policy.hcl` рядом с этим README. В HCL заполни `path` для единственного KV v2 API-пути `secret/data/housing` и `capabilities` только для чтения. Не добавляй wildcard или root-права. Код функций реализуется в Python, применение policy выполняется отдельными административными CLI-командами.
+Загрузчику модели нужно прочитать ключ закрытого хранилища. Он не должен получать право читать соседние значения или записывать новые. В этом задании ты ограничишь доступ одним путём и реализуешь чтение через `hvac`. Учебная функция проверяет наличие ключа. Скачивания модели здесь нет.
 
-## Контракты функций
+Работа выполняется в двух соседних файлах: [policy.hcl](policy.hcl) задаёт права на сервере, [solution.py](solution.py) — поведение клиента. CLI создания `hvac.Client` и обработки ошибок уже готов. Сначала напиши функции и policy, затем выдай краткоживущий token: иначе он может истечь ещё до первого запуска.
+
+## Шаг 1. Ограничить серверное разрешение
+
+Один и тот же секрет передаётся интерфейсам по-разному. Соответствие разобрано в [главе о KV v2](../../README.md#kv-v2-путь-политика-и-форма-ответа). Для задания логическое имя — `housing`, mount — `secret`. В policy нужен путь API `secret/data/housing` и единственная capability `read`.
+
+Заполни `policy.hcl`. Правило должно разрешать только это чтение: без wildcard и дополнительных путей. Проверка имеет две стороны: нужное значение читается, соседнее `neighbor` вызывает отказ. Root token обойдёт это ограничение, поэтому клиент упражнения получит отдельный token.
+
+## Шаг 2. Проверить ответ и вызвать SDK
 
 ```python
 def inspect_payload(payload):
@@ -16,47 +24,72 @@ def read_secret(client, path="housing", mount_point="secret") -> dict:
     ...
 ```
 
-| Функция и аргумент | Тип и формат | Происхождение и назначение | Пример |
-|---|---|---|---|
-| `inspect_payload`: `payload` | `dict` ответа KV v2 с вложенными словарями `data.data` | Результат `read_secret_version` или фиксированный вход теста. Проверяется наличие ключа, а не его значение | `{"data": {"data": {"artifact_key": "example-not-a-real-key"}, "metadata": {"version": 1}}}` |
-| `read_secret`: `client` | Настроенный `hvac.Client` с интерфейсом `secrets.kv.v2` | CLI создаёт его из адреса, token и timeout. Unit-тест передаёт объект с тем же интерфейсом | `hvac.Client(url=address, token=token, timeout=5)` |
-| `read_secret`: `path` | `str`, логическое имя внутри mount, default `"housing"` | Аргумент вызывающего кода или CLI `--path`. Сегмент `data` добавляет SDK | `"housing"`, для отрицательной проверки `"neighbor"` |
-| `read_secret`: `mount_point` | `str`, имя KV engine без `/v1/`, default `"secret"` | CLI `--mount` или аргумент теста. Отдельно от имени секрета | `"secret"` |
-
-Обе функции возвращают только `{"field_present": True}`. Пустая строка в `artifact_key` всё ещё означает наличие поля: проверка не оценивает пригодность ключа. Некорректная структура или отсутствие ключа дают `ValueError`. `read_secret` делает один вызов `client.secrets.kv.v2.read_secret_version` с именованными `path` и `mount_point`, затем проверяет payload. Ошибки SDK доходят до вызывающего кода без retry и без печати тела ответа.
-
-## Параметры CLI
-
-| Вход | Формат и происхождение | Пример и смысл |
+| Вход | Формат и источник | Что с ним сделать |
 |---|---|---|
-| `VAULT_ADDR`, `--address` | URL сервера. Флаг переопределяет env, затем используется default | `http://127.0.0.1:8200` |
-| `VAULT_TOKEN` | Ограниченный application token из текущего shell | Получен административной командой в подготовке. Через CLI-флаг не передаётся |
-| `--path` | Логическое имя секрета, default `housing` | `--path housing` |
-| `--mount` | Имя KV mount, default `secret` | `--mount secret` |
-| `--timeout` | Положительное число секунд, default `5` | `--timeout 3`. Неположительное значение отвергает argparse |
+| `payload` | Ответ KV v2: `{"data": {"data": {"artifact_key": "example-key"}, "metadata": {"version": 1}}}` | Убедиться, что вложенные уровни — словари и внутренний содержит `artifact_key` |
+| `client` | Настроенный `hvac.Client`. В быстрых тестах объект с тем же интерфейсом | Использовать `client.secrets.kv.v2.read_secret_version` |
+| `path` | Логическое имя, default `"housing"` | Передать в именованный аргумент `path` SDK. Не добавлять `data/` |
+| `mount_point` | Имя engine, default `"secret"` | Передать отдельно в именованный аргумент `mount_point` SDK |
 
-CLI печатает безопасный JSON результата. Forbidden даёт `access_denied`, Timeout — `network_timeout`, другие VaultError — `vault_error` и ненулевой код завершения. Ошибка структуры остаётся `ValueError` функции. Прямой запуск без `VAULT_TOKEN` не создаёт доступ автоматически.
+`inspect_payload` возвращает ровно `{"field_present": True}`. Пустая строка в поле тоже означает, что ключ присутствует: проверяется структура, а не пригодность значения. Отсутствие поля, словаря или неверная вложенность вызывают `ValueError`.
 
-## Выполнение и проверки
+`read_secret` делает один SDK-вызов, передаёт ответ в `inspect_payload` и возвращает её безопасный результат. Ошибки SDK должны дойти до вызывающего кода без retry. Значение, полный payload и token нельзя печатать или возвращать. Уже подготовленный CLI преобразует `Forbidden` в `access_denied`, `Timeout` — в `network_timeout`, прочий `VaultError` — в `vault_error`, с кодом завершения 1.
 
-Клиент читает один ключ закрытого артефакта. Администратор готовит dev Vault, секрет `secret/housing` и policy. Приложение использует отдельный ограниченный token. Успех с root не проверяет минимальные права.
-
-Заполни обе функции в `solution.py` и task-local policy по контрактам выше. Не возвращай исходный payload, значение ключа, token или текст ошибки SDK. Перед запуском CLI подготовь ограниченный token по [инструкции модуля](../../README.md#подготовка-к-заданиям).
+Проверь реализацию без сервера:
 
 ```bash
 make task TASK=10-vault/01-policy
 MLOPS_RUN_SDK=1 make task TASK=10-vault/01-policy
-python scripts/run_task.py run 10-vault/01-policy
 ```
 
-CLI читает `VAULT_ADDR`/`VAULT_TOKEN`, принимает `--address`, `--path`, `--mount`, `--timeout`. После реализации ожидается только field_present=true. SDK-тест проходит через настоящий hvac KV2 и подменяет лишь transport без сетевого сервиса. Без SDK базовая коллекция работает, SDK-тест пропущен. Незаполненные функции дают NotImplementedError.
+Первая команда использует подменённый клиент и фиксированные ответы. Для второй нужен `hvac` из [подготовки](../../README.md#подготовка-к-заданиям): тест проходит настоящий путь KV v2 SDK до подменённого HTTP-транспорта и проверяет URL `/v1/secret/data/housing`. Без флага SDK-тест пропускается. До реализации функций ожидается `NotImplementedError`.
 
-На уже подготовленном Vault с ограниченным application token:
+## Подготовить данные и ограниченный token
+
+Запусти dev Vault по [инструкции модуля](../../README.md#подготовка-к-заданиям). Дальше администратор выполняет три разных действия: сохраняет вымышленное значение, загружает твою policy под именем `housing`, выдаёт клиенту token с этой policy. Имя policy — ссылка из token на набор прав. Это не имя секрета, хотя для практики строки совпадают.
+
+Из корня курса:
 
 ```bash
+docker compose -f labs/vault/compose.yaml exec -e VAULT_TOKEN=course-root vault vault kv put secret/housing artifact_key=local-demo-value
+docker compose -f labs/vault/compose.yaml cp modules/10-vault/tasks/01-policy/policy.hcl vault:/tmp/policy.hcl
+docker compose -f labs/vault/compose.yaml exec -e VAULT_TOKEN=course-root vault vault policy write housing /tmp/policy.hcl
+docker compose -f labs/vault/compose.yaml exec -e VAULT_TOKEN=course-root vault vault token create -policy=housing -ttl=60s -renewable=false
+```
+
+Последняя команда показывает временный token. Это доступ на 60 секунд без продления. Скопируй его для текущего shell, не сохраняй полный вывод в проект. При истечении выпусти новый token той же командой. Прочитай ограниченный token без эха:
+
+```bash
+read -s VAULT_TOKEN
+export VAULT_TOKEN
+export VAULT_ADDR=http://127.0.0.1:8200
+```
+
+## Проверить реальное чтение
+
+```bash
+python modules/10-vault/tasks/01-policy/solution.py --path housing --mount secret
 MLOPS_RUN_INTEGRATION=1 make task TASK=10-vault/01-policy
+```
+
+CLI должен напечатать только `{"field_present": true}`. Live-тест вызывает твою `read_secret` для `housing`, затем для запрещённого `neighbor`: ожидает безопасный результат и `Forbidden`. Он не создаёт policy или данные. `VAULT_DENIED_PATH` позволяет выбрать другое заведомо запрещённое логическое имя.
+
+| Параметр CLI | Откуда берётся | Значение по умолчанию |
+|---|---|---|
+| `--address` | Переопределяет `VAULT_ADDR` | `http://127.0.0.1:8200`, если env отсутствует |
+| `VAULT_TOKEN` | Ограниченный token текущего shell | Обязателен, CLI-флага для него нет |
+| `--path`, `--mount` | Логическое имя и mount | `housing`, `secret` |
+| `--timeout` | Положительное время ожидания в секундах | `5` |
+
+Для диагностики можно проверить только HTTP-коды, не выводя тело ответа:
+
+```bash
 curl -s -o /dev/null -w '%{http_code}\n' -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/housing"
 curl -s -o /dev/null -w '%{http_code}\n' -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/neighbor"
 ```
 
-Live-тест вызывает именно твою `read_secret`: разрешённый путь даёт field_present=true, соседний — Forbidden/403. Он ничего не создаёт и не меняет. `VAULT_DENIED_PATH` позволяет указать другой заведомо запрещённый логический путь. Отрицательная проверка ловит ошибочное использование root. Отдельные curl probes сохранены для диагностики и печатают только коды 200/403. Закончи `unset VAULT_TOKEN`, затем `docker compose -f labs/vault/compose.yaml down`.
+Ожидаются 200 и 403. Два успешных чтения означают слишком широкие права или использование root. Два отказа могут означать истёкший token. Проверь время и policy.
+
+## Завершение
+
+Для следующего задания оставь dev Vault, значение и policy. Текущий ограниченный token можно удалить из окружения командой `unset VAULT_TOKEN`: следующий опыт использует новые временные token. Остановка и полная очистка — в [конце модуля](../../README.md#проверки-и-завершение).

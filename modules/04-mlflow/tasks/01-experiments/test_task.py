@@ -13,6 +13,8 @@ import joblib
 import numpy as np
 import pandas as pd
 from housing.features import FEATURES, TARGET
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import Pipeline
 
 try:
     import mlflow
@@ -151,6 +153,7 @@ def assert_training_records(data, output, records, persisted):
         len({json.dumps(record["parameters"], sort_keys=True) for record in records})
         == 3
     )
+    assert {record["parameters"]["alpha"] for record in records} == {0.1, 1.0, 10.0}
     comparison = json.loads((output / "comparison.json").read_text())
     for record in records:
         logged = persisted[record["run_id"]]
@@ -176,6 +179,11 @@ def assert_training_records(data, output, records, persisted):
         assert manifest["parameters"] == record["parameters"]
         assert manifest["versions"]
         bundle = joblib.load(io.BytesIO(by_name["model.joblib"]))
+        assert isinstance(bundle["pipeline"], Pipeline)
+        estimator = bundle["pipeline"].steps[-1][1]
+        assert isinstance(estimator, Ridge)
+        assert estimator.alpha == pytest.approx(record["parameters"]["alpha"])
+        assert manifest["seed"] == 42
         frame = pd.read_csv(data)
         for part in ("validation", "test"):
             rows = frame.iloc[split[part]]
@@ -185,9 +193,8 @@ def assert_training_records(data, output, records, persisted):
             assert measured[part]["mae"] == pytest.approx(np.mean(np.abs(errors)))
             assert measured[part]["rmse"] == pytest.approx(np.sqrt(np.mean(errors**2)))
             for metric in ("mae", "rmse"):
-                assert any(
-                    v == pytest.approx(measured[part][metric])
-                    for v in logged["metrics"].values()
+                assert logged["metrics"][f"{part}_{metric}"] == pytest.approx(
+                    measured[part][metric]
                 )
         for metric in ("mae", "rmse"):
             value = measured["validation"][metric]
@@ -196,11 +203,11 @@ def assert_training_records(data, output, records, persisted):
             assert any(v == pytest.approx(value) for v in logged["metrics"].values())
         # SDK params may be flattened, nested, or JSON serialized.
         assert json_contains(logged["params"], record["data_sha256"])
+        assert json_contains(logged["params"], manifest["seed"])
         for key, value in manifest["parameters"].items():
             assert json_contains(logged["params"], value)
-        for values in (manifest["versions"].values(), split.values()):
-            for value in values:
-                assert json_contains(logged["params"], value)
+        for value in manifest["versions"].values():
+            assert json_contains(logged["params"], value)
         assert json_contains(comparison, record["run_id"])
         assert json_contains(comparison, record["validation_mae"])
         assert json_contains(comparison, record["validation_rmse"])

@@ -5,6 +5,7 @@ import json
 import pytest
 
 import course_tasks.notebook as notebooks
+import housing.train as training
 
 
 def write_notebook(path, cells):
@@ -98,3 +99,38 @@ def test_housing_module_directory_cannot_escape_course(tmp_path, monkeypatch):
     monkeypatch.setenv("MLOPS_COURSE_ROOT", str(tmp_path))
     with pytest.raises(ValueError):
         notebooks.housing_notebook_path()
+
+
+@pytest.mark.parametrize("mode", ["omitted", "none", "configured"])
+def test_train_adapter_preserves_legacy_calls_and_forwards_parameters(
+    tmp_path, monkeypatch, mode
+):
+    path = tmp_path / "training.ipynb"
+    if mode == "configured":
+        definition = (
+            "def train(data, output, seed, *, parameters=None):\n"
+            "    output.write_text(json.dumps([str(data), seed, parameters]))\n"
+        )
+    else:
+        # A saved three-argument implementation remains callable until updated.
+        definition = (
+            "def train(data, output, seed):\n"
+            "    output.write_text(json.dumps([str(data), seed, None]))\n"
+        )
+    write_notebook(
+        path,
+        [
+            cell("import json", "course:imports"),
+            cell(definition, "course:definitions"),
+            cell("raise AssertionError('lab cells must not run')"),
+        ],
+    )
+    monkeypatch.setattr(training, "housing_notebook_path", lambda: path)
+    data, receipt = tmp_path / "input.csv", tmp_path / "receipt.json"
+    kwargs = {} if mode == "omitted" else {"parameters": None}
+    if mode == "configured":
+        kwargs = {"parameters": {"alpha": 0.1}}
+    assert training.train(data, receipt, 17, **kwargs) is None
+    assert json.loads(receipt.read_text()) == [
+        str(data), 17, kwargs.get("parameters")
+    ]

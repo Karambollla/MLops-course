@@ -6,17 +6,17 @@
 
 Нужно загрузить корпус без дубликатов и заметить частичный отказ. У bulk-запроса может быть HTTP 200, хотя отдельный документ отвергнут. [NDJSON и уровни ошибок](../../README.md#bulk-и-два-уровня-ошибок) объясняют, почему контракт требует проверять items.
 
-Предоставлены корпус `labs/search/corpus.json`, запросы/qrels, [mapping.json](mapping.json), `solution.py` и CPU Compose Elasticsearch 8.17.3. Нужны [основное окружение](../../../../SETUP.md) и выполненный модуль 13. Другие тяжёлые стенды и любой сервис на host port 9200 останови до запуска.
+Реализуй шесть учебных функций в соседнем [solution.py](solution.py). `main()` с клиентом и разбором CLI уже готов. Предоставлены корпус `labs/search/corpus.json`, запросы/qrels, [mapping.json](mapping.json), `solution.py` и CPU Compose Elasticsearch 8.17.3. Нужны [основное окружение](../../../../SETUP.md) и выполненный модуль 13. Другие тяжёлые стенды и любой сервис на host port 9200 останови до запуска.
 
 ## Документы, mapping и клиент
 
-`documents` в функциях ниже — JSON-массив из `labs/search/corpus.json`, уже декодированный через `json.loads`. Один документ имеет вид `{"id":7,"text":"Vault policies restrict secrets","topic":"security","vector":[0,0,0,1]}`. Файл с запросами содержит отдельные `vector` и `relevant`: разметка не загружается в индекс.
+`documents` в функциях ниже — JSON-массив из `labs/search/corpus.json`, уже декодированный через `json.loads`. ID 7 в этом корпусе назначен инструкции о политиках Vault, ID 8 — credentials. Один документ имеет вид `{"id":7,"text":"Vault policies restrict secrets","topic":"security","vector":[0,0,0,1]}`. Файл с запросами содержит отдельные `vector` и `relevant`: разметка не загружается в индекс.
 
 `client` — уже созданный объект SDK `Elasticsearch`. CLI создаёт его по `--url` и закрывает в `finally`. Учебные функции используют переданный клиент и не закрывают его. Не заменяй SDK-вызовы самостоятельными HTTP-запросами.
 
 [Mapping](mapping.json) загружается целиком как `dict`, включая верхние `mappings`. Поле `text` типа `text` анализируется для лексического поиска. `topic` типа `keyword` используется для точного фильтра. `vector` имеет тип `dense_vector`, `dims=4`, `index=true`, `similarity=cosine`.
 
-## Функции и их входы
+## Шаг 1. Подготовить bulk и проверить его результат
 
 ### `build_bulk(documents: list[dict], index: str) -> str`
 
@@ -42,6 +42,8 @@
 
 Для примера верни `["7"]`. Каждый item со `status>=300` или полем `error` считается неуспешным независимо от верхнего `errors`. Пустые items и полностью успешные операции дают `[]`. Сохрани порядок отказов. В Elasticsearch ответ может быть `ObjectApiResponse`: читай `response["items"]`, используя его интерфейс отображения.
 
+## Шаг 2. Проверить схему и загрузить документы
+
 ### `ensure_index(client, index: str, mapping: dict) -> None`
 
 | Параметр | Тип | Формат и смысл | Откуда взять | Пример |
@@ -62,7 +64,9 @@
 
 Передай NDJSON из `build_bulk` в `client.bulk`, разбери каждый item через `bulk_failures`. Любой отказ вызывает `ValueError`, в сообщении должны быть IDs отвергнутых документов. Успех требует refresh и возвращает число загруженных документов, для корпуса — `8`. Два ingest исходных IDs оставляют count=8.
 
-Bulk не является транзакцией: ошибка одного item не откатывает успешные items. Live-тест посылает ID900 с объектом вместо строкового `text` и ожидает настоящую mapper error с ID900 в исключении. `HTTP 200`, поле `errors` или итоговый count по отдельности не заменяют разбор каждого item.
+Bulk не является транзакцией: ошибка одного item не откатывает успешные items. Для проверки отказа live-тест создаёт отдельный неверный документ с новым ID 900 с объектом вместо строкового `text` и ожидает настоящую mapper error с ID 900 в исключении. `HTTP 200`, поле `errors` или итоговый count по отдельности не заменяют разбор каждого item.
+
+## Шаг 3. Выполнить два вида поиска
 
 ### `lexical_search(client, index: str, text: str, k: int = 5, topic: str | None = None) -> list[dict]`
 
@@ -74,7 +78,7 @@ Bulk не является транзакцией: ошибка одного ite
 | `k` | `int` | Положительное число hits без `bool` | Параметр функции или CLI `--k` | `5` |
 | `topic` | `str` или `None` | Точный `term`-фильтр внутри query | Категория корпуса, CLI `--topic` | `"security"` |
 
-Отправь `match` по text и `size=k` через `client.search`. Необязательный topic ограничивает сам запрос. Пустой text или неверный k дают `ValueError`. Запрос Vault должен включать ID7, тот же запрос с topic=release даёт `[]`.
+Отправь `match` по text и `size=k` через `client.search`. Необязательный topic ограничивает сам запрос. Пустой text или неверный k дают `ValueError`. Запрос Vault должен включать ID 7, тот же запрос с topic=release даёт `[]`.
 
 ### `vector_search(client, index: str, vector: list[float], k: int = 2, topic: str | None = None, dimension: int = 4) -> list[dict]`
 
@@ -109,23 +113,28 @@ Bulk не является транзакцией: ошибка одного ite
 
 При `index` CLI печатает число успешно загруженных документов, при поиске — JSON-список hits. Значение `k=5` относится к прямому вызову `lexical_search` без аргумента k. CLI использует свой default `2`.
 
-## Запуск
+## Проверить реализацию
 
-Все команды из корня курса в отдельном Python 3.12 окружении после SETUP:
+Сначала проверь чистые функции из корня курса в окружении [подготовки](../../README.md#подготовка-к-заданиям):
 
 ```bash
-python -m pip install -r labs/search/requirements.txt
-docker compose -f labs/search/elasticsearch.compose.yaml up -d
-python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py --help
-python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py index --url http://127.0.0.1:9200 --index course-docs
-python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py lexical --text Vault
-python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py vector --vector 0 0 0 1 --k 2 --topic security
 make task TASK=14-elasticsearch-opensearch/01-elasticsearch
 ```
 
-CLI уже разбирает параметры, создаёт `Elasticsearch` и вызывает функции. SDK-операции реализуешь сам. Исходная заготовка даёт NotImplementedError. `--mapping`, `--corpus`, `--index`, `--url` выбирают вход загрузки. `--k`, `--dimension`, `--topic` задают поиск. Elasticsearch client 8.17.2 и opensearch-py 2.8.0 закреплены в requirements. Без SDK сбор тестов и --help работают. Отсутствующий транзитивный dependency не маскируется как отсутствие SDK.
+Затем запусти Elasticsearch. OpenSearch на этом порту должен быть остановлен.
 
-Ожидаемое поведение настоящей практики: после двух ingest count=8 и payload сохранён, match Vault включает ID7, kNN security возвращает IDs 7/8, неизвестный topic даёт []. Неверная размерность отклоняется до SDK. Live-тест вызывает твою реализацию, затем читает созданный ею индекс и передаёт реальные выдачи в `ranking_metrics` модуля 13 и RRF задания 03: сначала реализуй эти функции.
+```bash
+docker compose -f labs/search/elasticsearch.compose.yaml up -d
+curl --fail http://127.0.0.1:9200
+python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py index
+python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py index
+python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py lexical --text Vault
+python modules/14-elasticsearch-opensearch/tasks/01-elasticsearch/solution.py vector --vector 0 0 0 1 --k 2 --topic security
+```
+
+Каждый `index` должен напечатать `8`, а в индексе после повтора остаются восемь документов. Лексический поиск включает ID 7 (Vault), векторный возвращает IDs 7/8 (Vault и credentials). Payload берётся из `_source`. Неизвестный topic даёт `[]`, неверная размерность — `ValueError` до SDK. Незавершённые функции дают `NotImplementedError`.
+
+Теперь реализуй `ranking_metrics` из 13/02 и RRF из задания 03, чтобы серверный тест мог проверить выдачу целиком:
 
 ```bash
 # Запись только в уникальное тестовое имя; cleanup удаляет только это имя.
@@ -134,7 +143,7 @@ MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 ELASTICSEARCH_URL=http://127.0.0.1:92
 MLOPS_RUN_INTEGRATION=1 ELASTICSEARCH_URL=http://127.0.0.1:9200 python scripts/run_task.py test 14-elasticsearch-opensearch/01-elasticsearch -- -m 'integration and not writes'
 ```
 
-Записывающий тест требует оба флага, отмечен integration/writes, генерирует UUID-имя и проверяет его отсутствие до работы. Он проверяет mapping, повторный ingest, каждый слой поиска, ошибку bulk item, метрики и RRF. Finally удаляет только своё имя. Без флагов он пропускается. При включении недоступный сервер, SDK или незавершённая функция — ошибка, а не skip. Read-only probe только читает course-docs. Он не доказывает, что твой импорт работает.
+Первый тест использует новое UUID-имя и вызывает твои функции: проверяет mapping, два импорта, поиск, отказ неверного документа, метрики и RRF. После выполнения удаляет только свой индекс. Второй читает заранее подготовленный `course-docs` прямым HTTP. Для записи нужны оба флага. Без них соответствующие проверки пропускаются. При включении отсутствие SDK, сервера или реализации даёт ошибку.
 
 ## Остановка
 

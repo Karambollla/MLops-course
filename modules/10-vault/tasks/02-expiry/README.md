@@ -1,13 +1,34 @@
-# TTL, renew и revoke через SDK и CLI
+# Продлить и отозвать собственный доступ
 
-[Модуль](../../README.md) · [Задания](../../README.md#задания) · [Общая подготовка](../../README.md#подготовка-к-заданиям)
+[Модуль](../../README.md) · [Подготовка](../../README.md#подготовка-к-заданиям) · [Все задания](../../README.md#задания)
 
-## Аргументы и результаты
+## Что предстоит сделать
+
+Клиент уже умеет читать `artifact_key`, но его token не действует бесконечно. Полученный 403 и отсутствие ответа по сети требуют разных действий. Здесь ты реализуешь классификацию исхода и две операции над token текущего клиента: продление и отзыв. Смысл TTL и отличие от ротации значения разобраны в [главе](../../README.md#ttl-продление-отзыв-и-ротация).
+
+Редактируй три заготовки в [solution.py](solution.py). CLI уже создаёт `hvac.Client`, выбирает действие и печатает безопасный результат. Секрет и policy остаются после [задания 01](../01-policy/README.md#подготовить-данные-и-ограниченный-token). Для опытов выдаются новые временные token.
+
+## Шаг 1. Различить исходы
 
 ```python
 def classify_error(status=None, timeout=False):
     ...
+```
 
+`status` — полученный HTTP-код (`int`) или `None`, `timeout` — признак, что клиент не получил исход вовремя (`bool`). Функция не выполняет запросов. Верни одну строку:
+
+| Условие | Результат | Что это позволяет решить вызывающему коду |
+|---|---|---|
+| `timeout=True`, при любом status | `network_timeout` | Ограничить повторы и проверить доступность сети |
+| Без timeout, status 403 | `access_denied` | Проверить token, TTL и policy |
+| Без timeout, status 200–299 | `ok` | Продолжить обработку полученного результата |
+| Все остальные случаи, включая `None` | `http_error` | Разобрать конкретный отказ отдельно |
+
+Например, `(403, True)` даёт `network_timeout`, а 401 без timeout по этому учебному контракту относится к `http_error`. Эта классификация не подтверждает срок token на сервере и не исправляет доступ.
+
+## Шаг 2. Выполнить self-операции SDK
+
+```python
 def renew_token(client, increment="60s") -> dict:
     ...
 
@@ -15,52 +36,60 @@ def revoke_token(client) -> dict:
     ...
 ```
 
-| Функция и аргумент | Тип и формат | Откуда берётся и зачем нужен | Пример |
-|---|---|---|---|
-| `classify_error`: `status` | `int` HTTP-кода либо `None`, default `None` | Уже полученный ответ. Функция не выполняет сеть | `403`, `204`, `None` |
-| `classify_error`: `timeout` | `bool`, default `False` | Вызывающий код сообщает, что ожидание ответа завершилось timeout | `True` при `requests.exceptions.Timeout` |
-| `renew_token`: `client` | Настроенный `hvac.Client` с `auth.token` | Клиент собственного временного renewable token. В тесте используется double с тем же интерфейсом | Клиент из CLI с `VAULT_ADDR` и `VAULT_TOKEN` |
-| `renew_token`: `increment` | `str` длительности Vault, default `"60s"` | Запрашиваемое продление из аргумента функции либо CLI `--increment`. Не обещает фактический TTL | `"45s"` |
-| `revoke_token`: `client` | Такой же клиент, авторизованный собственным token | Отзывается именно текущий token через self endpoint | Клиент временного token после renewal |
+`client` — `hvac.Client`, авторизованный собственным временным token. Для renewal token должен быть renewable. `increment` — запрашиваемая длительность Vault, строка вроде `"45s"`, по умолчанию `"60s"`.
 
-`classify_error` возвращает строку. Timeout имеет приоритет над status: `(403, True)` даёт `"network_timeout"`. Без timeout код 403 даёт `"access_denied"`, весь диапазон 200–299 — `"ok"`, остальные коды и `None` — `"http_error"`. Например, 401 по этому учебному контракту тоже `http_error`. Функция не проверяет TTL на сервере и не исправляет авторизацию.
+`renew_token` один раз вызывает `client.auth.token.renew_self(increment=increment)`. Из ответа `auth.lease_duration` и `auth.renewable` сформируй `{"ttl_seconds": 60, "renewable": True}` с фактическими значениями сервера. Не вычисляй срок из increment. Поле `auth.client_token`, если оно пришло, в результат не включается и не печатается.
 
-`renew_token` вызывает `client.auth.token.renew_self(increment=increment)` один раз. Из ответа `{"auth": {"lease_duration": 60, "renewable": True, ...}}` верни `{"ttl_seconds": 60, "renewable": True}`. Значения берутся из ответа, а не выводятся из increment. Ответ может также содержать `client_token`, его нельзя возвращать или печатать.
-
-`revoke_token` вызывает `client.auth.token.revoke_self()` без чужого token в аргументах и после успеха возвращает `{"revoked": True}`. Forbidden и Timeout обеих SDK-функций передаются вызывающему коду. Nonrenewable или истёкший token нельзя сделать рабочим одной повторной попыткой.
-
-## Запуск и ручной lifecycle
-
-| Вход CLI | Тип и происхождение | Пример |
-|---|---|---|
-| `action` | Обязательный позиционный аргумент, `renew` или `revoke` | `run 10-vault/02-expiry renew` |
-| `--address`, `VAULT_ADDR` | URL сервера. Флаг выше env по приоритету, default `http://127.0.0.1:8200` | `--address http://127.0.0.1:8200` |
-| `VAULT_TOKEN` | Собственный временный token в env, прочитанный без эха | Используется внутри `hvac.Client`, не передаётся аргументом token в функцию |
-| `--increment` | Строковая длительность, default `60s` | `renew --increment 45s` |
-
-CLI использует timeout 5 секунд. Forbidden печатается как `access_denied`, Timeout — `network_timeout`, другой VaultError — `vault_error`. Эти исходы завершают CLI с кодом 1. `classify_error` остаётся отдельной чистой функцией, CLI не вызывает её автоматически.
-
-Реализуй три функции в `solution.py`. Истечение прав и сетевой timeout требуют разных действий. Подготовка token и SDK описана в [модуле](../../README.md#подготовка-к-заданиям). Базовые тесты не ждут истечения TTL и не открывают сеть:
+`revoke_token` один раз вызывает `client.auth.token.revoke_self()` без аргументов и после успеха возвращает `{"revoked": True}`. Ошибки обеих SDK-операций передаются вызывающему коду. Истёкший или nonrenewable token нельзя продлить бесконечными повторами.
 
 ```bash
 make task TASK=10-vault/02-expiry
 ```
 
-Для ручного опыта создай отдельный краткоживущий nonrenewable token по [подготовке модуля](../../README.md#подготовка-к-заданиям), используй только его в `VAULT_TOKEN` и выполни статусный GET из задания 01 сразу и после TTL60s: 200→403. Дождись срока вручную. Тесты не задерживают прогон на минуту. Отдельно создай renewable token и до истечения проверь:
+Тесты проверяют границы HTTP-кодов, приоритет timeout, вызов self-методов и отсутствие token в выводе. Они не открывают сеть и не ждут истечения TTL.
+
+## Шаг 3. Наблюдать истечение и отзыв
+
+Для опыта истечения выпусти новый nonrenewable token [командой задания 01](../01-policy/README.md#подготовить-данные-и-ограниченный-token) и передай его в `VAULT_TOKEN`. Сразу проверь чтение, затем повтори после его TTL 60 секунд: 200 сменяется на 403. Код значения в KV при этом не удаляется.
+
+Теперь нужен отдельный token, который разрешает продление. Только на своём dev-стенде:
 
 ```bash
-python scripts/run_task.py run 10-vault/02-expiry renew --increment 60s
-python scripts/run_task.py run 10-vault/02-expiry revoke
+docker compose -f labs/vault/compose.yaml exec -e VAULT_TOKEN=course-root vault vault token create -policy=housing -ttl=60s -renewable=true
+read -s VAULT_TOKEN
+export VAULT_TOKEN
 ```
 
-CLI создаёт настоящий hvac client из `VAULT_ADDR`/`VAULT_TOKEN`. `--address` переопределяет адрес. Renewal печатает только TTL/renewable. После revoke следующий запуск чтения из задания 01 должен закончиться access_denied. Эквивалентные команды Vault CLI: `vault token renew -format=json | jq '{ttl:.auth.lease_duration,renewable:.auth.renewable}'` и `vault token revoke -self`. Используй их только со своим временным token. Revoke не удаляет статическое значение KV.
-
-Живой тест lifecycle **изменяет** состояние и включается отдельно:
+До истечения запусти:
 
 ```bash
+python modules/10-vault/tasks/02-expiry/solution.py renew --increment 60s
+python modules/10-vault/tasks/01-policy/solution.py
+python modules/10-vault/tasks/02-expiry/solution.py revoke
+python modules/10-vault/tasks/01-policy/solution.py
+```
+
+Renewal выводит только TTL и renewable, следующее чтение успешно. Revoke выводит `{"revoked": true}`, последнее чтение завершается `access_denied`. Если token успел истечь, создай новый для повторения опыта.
+
+CLI принимает обязательное действие `renew` или `revoke`, флаг `--increment` (default `60s`) и `--address`. Адрес берётся из `VAULT_ADDR`, при его отсутствии из `http://127.0.0.1:8200`. Флаг выше env по приоритету. Token берётся из `VAULT_TOKEN`, timeout клиента равен 5 секундам. Forbidden, Timeout и прочие VaultError дают соответственно `access_denied`, `network_timeout`, `vault_error` с кодом 1. Чистая `classify_error` сама этим CLI не вызывается.
+
+## Проверка на новом временном token
+
+Автоматическая live-проверка должна сама создать удостоверение, успеть продлить его и отозвать. Для этого ей нужен отдельный административный клиент. В `VAULT_ADMIN_TOKEN` введи token администратора своего dev-стенда без эха. `VAULT_ADDR`, поле `artifact_key` и policy `housing` должны быть подготовлены:
+
+```bash
+read -s VAULT_ADMIN_TOKEN
+export VAULT_ADMIN_TOKEN
 MLOPS_RUN_INTEGRATION=1 MLOPS_RUN_WRITES=1 make task TASK=10-vault/02-expiry
 ```
 
-Нужны установленный SDK, `VAULT_ADDR`, отдельный `VAULT_ADMIN_TOKEN` с правом выдачи/отзыва дочерних token и существующая policy `housing` (либо `VAULT_TEST_POLICY`). Тест сам создаёт временный renewable child TTL60s, проверяет чтение твоей функцией, renewal, revoke и 403 после отзыва. В finally администратор отзывает только созданный в этом тесте child, включая случай NotImplementedError. Переданный admin/application token не отзывается. Marker `writes` позволяет дополнительно выбрать/исключить такие проверки. Без **обоих** opt-in флагов live lifecycle пропущен.
+Тест создаёт renewable child с TTL `60s`, вызывает твоё чтение из 01, renewal и revoke, затем проверяет отказ. В `finally` администратор отзывает только созданный тестом child, в том числе при ошибке реализации. Переданные admin/application token не отзываются. `VAULT_TEST_POLICY` позволяет переопределить имя policy, по умолчанию `housing`. Для записи нужны оба флага. Без них тест пропущен.
 
-Заверши `unset VAULT_TOKEN VAULT_ADMIN_TOKEN` и останови dev Vault. Токены и полный stdout `token create/lookup` не сохраняй в Git.
+## Завершение
+
+```bash
+unset VAULT_TOKEN VAULT_ADMIN_TOKEN
+docker compose -f labs/vault/compose.yaml down
+```
+
+Dev-данные исчезнут после удаления контейнера. В проекте остаются код и policy, а значения token и полный вывод их создания не сохраняются.

@@ -1,70 +1,89 @@
-# Отказ и восстановление
+# Обнаружить два разных отказа API
 
-[Модуль](../../README.md) · [Задания](../../README.md#задания) · [Общая подготовка](../../README.md#подготовка-к-заданиям)
+[Модуль](../../README.md) · [Подготовка](../../README.md#подготовка-к-заданиям) · [Все задания](../../README.md#задания)
 
-## Зачем нужны два сигнала отказа
+## Что предстоит сделать
 
-Недоступный процесс и живой API без модели требуют разных диагностических действий. Prometheus видит успешный `/metrics` даже тогда, когда predict возвращает 503. Поэтому правило target down нужно сохранить, а отказ полезной функции — обнаружить отдельным сигналом.
+Нагрузка видна в Prometheus. Теперь надо различить два случая: процесс API остановлен и процесс работает, но не загрузил модель. В первом случае Prometheus не получит метрики. Во втором `/metrics` доступен, а `/predict` возвращает 503. Одно правило по `up` не обнаружит оба отказа.
 
-Уже готовы Compose, scrape каждые 5 секунд и `HousingTargetDown`. Ты создаёшь task-local rules и подключающий override, не меняя общий стенд. Нужны [различие уровней здоровья](../../README.md#три-уровня-здоровья-и-качество-модели) и [состояния alert](../../README.md#алерты-и-поиск-причины).
+В общем стенде уже есть scrape каждые 5 секунд и `HousingTargetDown`. Ты заполнишь соседний [rules.yaml](rules.yaml) и создашь `compose.override.yaml` в каталоге задания, чтобы подключить свой файл правил. Общие конфиги `labs/monitoring` менять не требуется. Python-функции здесь нет. Состояния alert объясняются в [главе](../../README.md#алерты-и-поиск-причины).
 
-## Файлы и параметры проверки
+## Шаг 1. Подключить два правила
 
-| Вход | Тип и формат | Происхождение и действие | Пример |
-|---|---|---|---|
-| `rules.yaml` | YAML Prometheus с `groups[].rules[]` | Task-local заготовка пустая. Скопируй основной HousingTargetDown и добавь свой alert | `alert`, `expr`, `for`, `labels` |
-| `alert` | Строка имени | Отличает своё правило от базового | Собственное имя для predict 5xx |
-| `expr` | PromQL-строка | Условие по реально экспортируемой метрике | Счётчик `/predict` с `status=~"5.."` |
-| `for` | Строка длительности | Условие должно держаться этот период до firing | `30s` в базовом правиле |
-| Новый `compose.override.yaml` | YAML Compose | Переопределяет volume rules для `services.prometheus`, общий Compose не редактируется | Абсолютный путь rules → `/etc/prometheus/alerts.yml:ro` |
-| `PROMETHEUS_URL` | URL в env теста, default `http://127.0.0.1:9090` | Адрес HTTP API Prometheus на компьютере | `http://127.0.0.1:9090` |
-| `MLOPS_EXPECT_UP` | Строка `"0"` или `"1"`, default `"1"` | Текущее ожидаемое состояние target в read-only тесте | `0` после stop и scrape |
+Скопируй содержимое `labs/monitoring/alerts.yml` в `rules.yaml`: базовое правило `HousingTargetDown` должно сохраниться. Добавь alert с другим именем для серверных ошибок `/predict`. Используй существующий `http_requests_total` с `route="/predict"` и `status=~"5.."`, а не вымышленный gauge readiness: API его не экспортирует.
 
-Пути относительных bind mounts Compose вычисляет от первого `-f`, то есть каталога `labs/monitoring`. Абсолютный путь к task-local rules помогает избежать чтения другого файла. Тест проверяет наличие загруженного основного и дополнительного alert, но не доказывает правильность выражения дополнительного правила. Его срабатывание проверь настоящими запросами и `/api/v1/alerts`.
+Поля `groups[].rules[]` задают имя `alert`, условие `expr`, период `for` и дополнительные `labels`. Сначала реши, какое наблюдение считать отказом: например, наличие 5xx predict на выбранном временном окне. Затем запиши PromQL и период устойчивости условия. Правило на основе трафика требует настоящих predict-запросов: отсутствие запросов не доказывает готовность модели.
 
-## Технический контракт
+В новом `compose.override.yaml` переопредели volume `services.prometheus`, подключив свой `rules.yaml` как `/etc/prometheus/alerts.yml:ro`. Источник должен указывать на файл задания на компьютере. Относительные bind mounts считаются от первого `-f`, то есть `labs/monitoring`. Абсолютный путь помогает не прочитать другой файл.
 
-На живом процессе ожидается `up=1`, после остановки и очередного scrape — `up=0`, после запуска — снова 1. Для условия, выдержавшего `for`, alert проходит pending→firing. Вариант без модели сохраняет `up=1`, но должен обнаруживаться дополнительным правилом. Например, серия реальных predict с HTTP503 увеличивает существующий счётчик 5xx. Для отдельной readiness-метрики нужен её источник, в API готового gauge нет. Live-тест читает текущий up и загруженные правила, не доказывает историю переходов или доставку уведомлений.
+Например, при запуске из корня курса `PWD` указывает на каталог проекта, и override может подключить rules так:
 
-## Настройка и опыт отказа
+```yaml
+services:
+  prometheus:
+    volumes:
+      - ${PWD}/modules/09-monitoring/tasks/02-outage/rules.yaml:/etc/prometheus/alerts.yml:ro
+```
 
-Редактируй `rules.yaml`: начни с копии `labs/monitoring/alerts.yml`, сохрани `HousingTargetDown` и добавь своё правило для живого API без модели. Оно может использовать predict 5xx. Для readiness нужен реальный источник метрики, готового gauge в API нет.
-
-Создай рядом `compose.override.yaml`, который подключит этот rules-файл к `services.prometheus` как `/etc/prometheus/alerts.yml:ro`. Используй абсолютный путь к исходному файлу на компьютере, чтобы не перепутать базовый каталог Compose. Общие файлы в `labs/monitoring` менять не требуется.
-
-Проверь синтаксис rules перед запуском:
+Проверь rules отдельно:
 
 ```bash
 docker run --rm --entrypoint promtool -v "$PWD/modules/09-monitoring/tasks/02-outage/rules.yaml:/tmp/rules.yaml:ro" prom/prometheus:v3.2.1 check rules /tmp/rules.yaml
 ```
 
+Затем запусти конфигурацию с override:
+
 ```bash
 docker compose -f labs/monitoring/compose.yaml -f modules/09-monitoring/tasks/02-outage/compose.override.yaml up -d --build
-curl -fsS 'http://127.0.0.1:9090/api/v1/query?query=up%7Bjob%3D%22housing%22%7D'
 MLOPS_RUN_INTEGRATION=1 make task TASK=09-monitoring/02-outage
-# Только вручную для опыта отказа:
-docker compose -f labs/monitoring/compose.yaml stop api
-MLOPS_RUN_INTEGRATION=1 MLOPS_EXPECT_UP=0 make task TASK=09-monitoring/02-outage
-curl -fsS http://127.0.0.1:9090/api/v1/alerts
-docker compose -f labs/monitoring/compose.yaml start api
 ```
 
-Подожди scrape interval после stop/start и дольше `for` правила для firing. Ожидаемый инвариант: up 1→0→1, alert inactive→pending→firing→inactive. Firing не подтверждает доставку уведомления. Проверь вручную /ready и /predict в варианте без bundle: up=1 при HTTP503, поэтому одного up недостаточно. `PROMETHEUS_URL` меняет адрес live-проверки. Она проверяет текущий target и загруженные правила, не историю переходов. В конце `docker compose -f labs/monitoring/compose.yaml down`.
+Тест ожидает `up=1`, наличие базового и ещё одного alert в `/api/v1/rules`. Он не оценивает смысл дополнительного выражения и не доказывает его срабатывание. Это проверяется следующими опытами.
 
-## Отдельный опыт без модели
-
-Для воспроизведения состояния без bundle сохрани свою модель на месте, а через task-local Compose override направь volume API `/models:ro` на отдельный пустой каталог, например `work/monitoring-empty-models`. Создай этот каталог до запуска. Как и для rules, абсолютный путь источника исключает неоднозначность Compose. Пересоздай только API через ту же пару `-f` и `up -d --force-recreate api`.
-
-После правки своего override:
+## Шаг 2. Остановить и восстановить процесс
 
 ```bash
+docker compose -f labs/monitoring/compose.yaml -f modules/09-monitoring/tasks/02-outage/compose.override.yaml stop api
+```
+
+Подожди очередного scrape, затем проверь текущий отказ:
+
+```bash
+MLOPS_RUN_INTEGRATION=1 MLOPS_EXPECT_UP=0 make task TASK=09-monitoring/02-outage
+curl -fsS http://127.0.0.1:9090/api/v1/alerts
+```
+
+`MLOPS_EXPECT_UP` принимает строку `0` или `1`, по умолчанию `1`. После неуспешного scrape ожидается `up=0`, затем `HousingTargetDown` проходит pending и после устойчивого условия `for: 30s` — firing. Учитывай также периоды scrape/evaluation. Firing означает вычисленный сигнал. Доставки уведомления в этом стенде нет.
+
+```bash
+docker compose -f labs/monitoring/compose.yaml -f modules/09-monitoring/tasks/02-outage/compose.override.yaml start api
+```
+
+После успешного scrape ожидаются `up=1` и исчезновение активного базового alert. Повтори тест с обычным `MLOPS_EXPECT_UP=1`. `PROMETHEUS_URL` меняет базовый URL проверки, по умолчанию `http://127.0.0.1:9090`. Тест проверяет текущее состояние, а переходы ты наблюдаешь сам.
+
+## Шаг 3. Оставить процесс без модели
+
+Свою модель не удаляй. Создай пустой `work/monitoring-empty-models` и в том же task-local override направь volume API `/models:ro` на абсолютный путь этого каталога. Это заменяет только источник bundle. Затем пересоздай API:
+
+```bash
+mkdir -p work/monitoring-empty-models
 docker compose -f labs/monitoring/compose.yaml -f modules/09-monitoring/tasks/02-outage/compose.override.yaml up -d --force-recreate api
 curl -i http://127.0.0.1:8000/ready
 curl -i -H 'Content-Type: application/json' --data @labs/housing/request.json http://127.0.0.1:8000/predict
 ```
 
-Теперь `/live` и `/metrics` должны отвечать, `/ready` и корректный `/predict` — давать 503. Если выбрано правило по 5xx, создай реальные predict-запросы с `labs/housing/request.json` и наблюдай alerts после своего `for`. Один up=1 не подтверждает готовность. Затем верни исходный mount `work/artifacts:/models:ro` в своём override и пересоздай API, чтобы восстановить рабочую модель. В конце останови ту же конфигурацию с обоими `-f`:
+Ожидаются работающие `/live` и `/metrics`, но HTTP 503 для `/ready` и корректного `/predict`. После scrape `up` остаётся равным 1. Повтори реальные predict-запросы так, чтобы условие твоего правила сохранялось до `for`, и наблюдай дополнительный alert в `/api/v1/alerts`. Проверь, что базовое правило не подменяет этот сигнал.
+
+Для классификатора изображений отсутствие файла весов дало бы похожий технический отказ. Ошибочный класс при HTTP 200 потребовал бы другой проверки — известных правильных меток, как в следующем задании требуется target для Housing.
+
+## Восстановление и завершение
+
+Верни в override исходный mount `work/artifacts:/models:ro`, пересоздай API той же парой `-f` и проверь `/ready` и `/predict`. Alert по 5xx может оставаться активным, пока ошибки ещё входят в его временное окно. Это отличается от продолжающегося отказа.
+
+Останови ту же конфигурацию:
 
 ```bash
 docker compose -f labs/monitoring/compose.yaml -f modules/09-monitoring/tasks/02-outage/compose.override.yaml down
 ```
+
+Bundle в `work/artifacts` сохраняется. Файлы rules и override остаются исходниками опыта. Named volumes Prometheus/Grafana при `down` не удаляются.

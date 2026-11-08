@@ -10,8 +10,17 @@ def build_pipeline(seed: int = 42) -> Pipeline:
     return load_notebook(housing_notebook_path()).build_pipeline(seed)
 
 
-def train(data: Path, output: Path, seed: int) -> None:
-    return load_notebook(housing_notebook_path()).train(data, output, seed)
+def train(
+    data: Path,
+    output: Path,
+    seed: int,
+    *,
+    parameters: dict | None = None,
+) -> None:
+    definitions = load_notebook(housing_notebook_path())
+    if parameters is None:
+        return definitions.train(data, output, seed)
+    return definitions.train(data, output, seed, parameters=parameters)
 
 
 def main() -> None:

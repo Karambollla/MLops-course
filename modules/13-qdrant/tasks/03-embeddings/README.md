@@ -6,9 +6,9 @@
 
 Восемь условных векторов подтверждают правильность API, но не показывают, умеет ли поиск понимать перефразировки. Теперь векторы вычисляет настоящая модель, а манифест связывает индекс с её версией и корпусом. Причина согласованной смены модели запросов и документов — в [теории embeddings](../../README.md#от-текста-к-embedding-и-расстоянию), состав версии — в [разделе индекса](../../README.md#настоящие-embeddings-и-версия-индекса).
 
-Уже есть CPU-окружение Qdrant, корпус и функция метрик из предыдущих заданий. В `solution.py` предоставлена сигнатура `make_manifest`. Модель и новый индекс эта функция не скачивает и не создаёт. Нужны [основное окружение](../../../../SETUP.md) и отдельное окружение для encoder.
+Уже есть CPU-окружение Qdrant, корпус и функция метрик из предыдущих заданий. В соседнем [solution.py](solution.py) реализуй `make_manifest`. Для вызовов encoder и создания нового индекса используй отдельный локальный Python-фрагмент. Модель и новый индекс эта функция не скачивает и не создаёт. Нужны [основное окружение](../../../../SETUP.md) и отдельное окружение для encoder.
 
-## Сигнатура и параметры
+## Шаг 1. Связать векторы с исходными данными
 
 ```python
 def make_manifest(model_id: str, revision: str, vectors: list[list[float]], corpus_bytes: bytes) -> dict:
@@ -32,15 +32,40 @@ def make_manifest(model_id: str, revision: str, vectors: list[list[float]], corp
 
 Для двух векторов `[[1,0],[0,1]]` правильные dimension=2 и count=2, независимо от имени модели. При входе `corpus_bytes=b"corpus"` hash должен совпасть с `hashlib.sha256(b"corpus").hexdigest()`. Такой маленький пример проверяет происхождение данных, а не смысл embedding.
 
-## Реальные CPU-векторы и сравнение
+## Шаг 2. Получить CPU-векторы и создать отдельную коллекцию
 
-Установи `fastembed==0.6.1` в отдельном окружении. Выбери `BAAI/bge-small-en-v1.5`, прочитай [model card](https://huggingface.co/BAAI/bge-small-en-v1.5), закрепи model ID и фактический revision/cache snapshot. Применяй одинаковую подготовку запросов во всех сравниваемых движках. Первый запуск требует скачивания весов. Без него проверка манифеста всё равно доступна.
+В окружении Qdrant установи `fastembed==0.6.1`. После этого маленький фрагмент показывает границу SDK: входом остаются тексты исходного корпуса, выходом становятся новые массивы вместо ручного поля `vector`.
 
-Получай embeddings корпуса и запросов на CPU. Проверь число выходных векторов и размерность, создай новую коллекцию с этой размерностью. Не переписывай ручную `course-docs`, нужную probe первого задания. Расширь собственный корпус до 30 документов и независимо разметь 20 запросов. Сравни keyword baseline и vector search по одинаковым qrels и k. Отдели подбор параметров от финальной проверки.
+```python
+import json
+from pathlib import Path
+from fastembed import TextEmbedding
+from huggingface_hub import model_info, snapshot_download
+
+corpus_bytes = Path("labs/search/corpus.json").read_bytes()
+documents = json.loads(corpus_bytes)
+source = "qdrant/bge-small-en-v1.5-onnx-q"
+revision = model_info(source).sha
+model_dir = snapshot_download(source, revision=revision, cache_dir="work/fastembed-cache")
+encoder = TextEmbedding(
+    model_name="BAAI/bge-small-en-v1.5",
+    specific_model_path=model_dir,
+    providers=["CPUExecutionProvider"],
+)
+vectors = [vector.tolist() for vector in encoder.embed([doc["text"] for doc in documents])]
+```
+
+`model_info(source).sha` получает commit ONNX-источника, `snapshot_download` скачивает именно его в `cache_dir`. Сохрани полученный `revision`: при повторении используй сохранённое значение вместо нового разрешения текущего commit. `specific_model_path` передаёт этот каталог encoder, `model_name` выбирает способ обработки, `providers` — CPU. Эти аргументы поддерживает [FastEmbed 0.6.1](https://github.com/qdrant/fastembed/blob/v0.6.1/fastembed/text/onnx_embedding.py). `huggingface_hub` устанавливается как его зависимость. `embed` возвращает по массиву на документ. Список сохраняет порядок связи с IDs.
+
+Имени `BAAI/bge-small-en-v1.5` в этой версии соответствует ONNX-репозиторий `qdrant/bge-small-en-v1.5-onnx-q`. Поэтому в `make_manifest` передай выбранный model ID и `revision` из фрагмента, а источник и локальные файлы сохрани рядом. SHA upstream-репозитория BAAI не описывает этот ONNX snapshot.
+
+Для запросов используй тот же encoder и выбранную подготовку текста. Прочитай [model card](https://huggingface.co/BAAI/bge-small-en-v1.5): если используешь query instruction, добавляй её к запросам согласованно во всех сравнениях и сохраняй эту настройку. Манифест принимает уже полученные vectors и bytes. Его чистая проверка не требует скачивания модели.
+
+Получай embeddings корпуса и запросов на CPU. Проверь число выходных векторов и размерность, создай новую коллекцию с этой размерностью. Не переписывай ручную `course-docs`, нужную probe первого задания. Для проверки качества расширь собственную копию корпуса до 30 документов и независимо разметь 20 запросов. Сравни keyword baseline и vector search по одинаковым qrels и k. Отдели подбор параметров от финальной проверки.
 
 Корректное взаимодействие: одна revision encoder → N документов и N векторов размерности D → коллекция с size=D → запрос encoder той же версии → top-k IDs → метрики по отдельной разметке. Успешный count не доказывает качество. Несовпадающие model revisions могут дать плохой ranking без HTTP-ошибки.
 
-## Проверка и завершение
+## Шаг 3. Проверить манифест и оценить поиск
 
 ```bash
 make task TASK=13-qdrant/03-embeddings

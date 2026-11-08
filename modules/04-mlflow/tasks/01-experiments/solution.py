@@ -18,6 +18,7 @@ from sklearn.linear_model import Ridge
 
 from course_tasks import load_task
 from housing.features import FEATURES, TARGET
+from housing.train import train
 
 try:
     import mlflow
@@ -45,9 +46,11 @@ def track_experiments(
             "Install MLflow SDK: python -m pip install -r labs/mlflow/requirements.txt"
         )
     # TODO: set_tracking_uri / set_experiment(experiment_name) выбирают сервер и группу.
-    # Для каждой конфигурации: start_run, своё обучение, log_params,
-    # log_metrics и log_artifacts; значения берутся из настоящих результатов.
-    # Пример этих SDK-вызовов: ../../README.md, «Самостоятельный пример учёта».
+    # Для alpha=0.1/1.0/10.0 вызови train(..., seed=42, parameters={"alpha": alpha}).
+    # Сначала реализуй этот режим train в сохранённом ML-notebook.
+    # Для каждого run: реальные параметры/версии, четыре именованные метрики,
+    # четыре файла обучения. Полный split хранится в artifact, не в params.
+    # Методы SDK разобраны в ../../README.md, «Самостоятельный пример учёта».
     raise NotImplementedError("Залогируй три эксперимента")
 
 
