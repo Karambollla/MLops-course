@@ -42,17 +42,17 @@
       "status": "pass",
       "details": {
         "checks": [
-          "image build",
-          "isolated ML venv",
-          "standalone UI",
-          "DAG import without errors",
-          "unpause/trigger",
-          "validate_data success",
-          "intentional training NotImplementedError",
-          "metadata survives restart"
+          "Airflow 3.1.0 verification image builds from cached image of same version",
+          "isolated ML venv and pytest imports",
+          "real TaskFlow example execution",
+          "XCom round trip",
+          "daily UTC interval from task context",
+          "retry after write with first-attempt history evidence"
         ],
         "training_implemented": false,
-        "note": "Retry may be pending; student train/gate/publish deliberately remain exercises."
+        "learner_sdk_status": "expected NotImplementedError in build_dag; 8 SDK tests fail on unfinished exercise",
+        "learner_scheduler_runs_verified": false,
+        "note": "Framework smoke uses separate temporary DAG and database, not a completed learner solution."
       }
     },
     {

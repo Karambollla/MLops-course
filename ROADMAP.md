@@ -14,7 +14,7 @@
 ## 2. Управление ML-циклом
 
 - [04. MLflow](modules/04-mlflow/README.md#задания): учёт экспериментов, registry и обработка отказа tracking.
-- [05. Airflow](modules/05-airflow/README.md#задания): DAG обучения, quality gate, повторные запуски и интервалы данных.
+- [05. Airflow](modules/05-airflow/README.md#задания): Самостоятельный DAG через Task SDK, Params/XCom, quality gate, scheduler retry и data intervals.
 - [06. ClearML](modules/06-clearml/README.md#задания): offline-эксперимент, Server/Agent и сравнение инструментов.
 
 Результат: происхождение модели прослеживается до данных и конфигурации, а повтор пайплайна не создаёт неконтролируемых дубликатов. ClearML изучается на отдельном стенде. Серверный вариант требует совместимой платформы.

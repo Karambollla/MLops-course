@@ -111,7 +111,7 @@
     },
     {
       "id": "05-airflow/01-pipeline",
-      "title": "DAG без подмены обучения",
+      "title": "Task SDK: DAG обучения",
       "starter": "solution.py",
       "tests": "test_task.py",
       "platform": "cpu",
@@ -120,7 +120,7 @@
     },
     {
       "id": "05-airflow/02-gate-retry",
-      "title": "Gate и повтор",
+      "title": "Task SDK: gate и scheduler retry",
       "starter": "solution.py",
       "tests": "test_task.py",
       "platform": "cpu",
@@ -129,7 +129,7 @@
     },
     {
       "id": "05-airflow/03-failure-intervals",
-      "title": "Сбой и интервалы",
+      "title": "Task SDK: расписание и контекст интервала",
       "starter": "solution.py",
       "tests": "test_task.py",
       "platform": "cpu",

@@ -1,106 +1,103 @@
-# DAG без подмены обучения
+# Построить DAG обучения через Task SDK
 
-[Модуль и подготовка](../../README.md#подготовка-к-заданиям) · [Все задания модуля](../../README.md#задания) · [SETUP](../../../../SETUP.md)
+[Модуль](../../README.md) · [Подготовка](../../README.md#подготовка-к-заданиям) · [Все задания](../../README.md#задания)
 
 ## Что предстоит сделать
 
-У тебя уже есть CLI с проверенной процедурой split/fit/evaluate. Теперь реализуй `run_training` в соседнем [solution.py](solution.py) и доработай ключ запуска в [housing_pipeline.py](housing_pipeline.py). Шаг графа должен вызвать прежнее обучение, проверить его файлы и передать следующему шагу путь к ним. Результат проверяется сначала тестом функции, затем по выполнению `train_evaluate` в Airflow. Роли процессов и окружений показаны в [архитектуре графа](../../README.md#кто-исполняет-граф-и-кто-исполняет-обучение), путь результата — в [разборе запуска](../../README.md#один-запуск-от-csv-до-xcom).
+Существующая `housing.train` уже умеет обучать модель. Теперь нужно описать, когда её вызывать и как передать результат следующей работе. В [solution.py](solution.py) реализуй фабрику настоящего DAG. Здесь ты сам применяешь `@dag`, `@task`, `Param` и `get_current_context` из `airflow.sdk`.
+
+Первый этап заканчивается двумя успешно выполненными задачами: `validate_data → train_evaluate`. Gate и публикация пока не нужны. Различие описания и выполнения разобрано в [теории TaskFlow](../../README.md#как-функция-становится-задачей).
 
 ## Что подготовлено
 
-Нужны реализованный [train кандидата](../../../01-ml/housing.ipynb), манифест и host-файл `work/housing.csv`. Compose отображает его в `/work/housing.csv`. Образ содержит пакет housing и отдельный ML venv. В `housing_pipeline.py` уже заданы validate_data, вызов ML-процесса и начальные настройки. Реализуй `run_training`, доработай устойчивый ключ и подключи обучение. После правки solution.py пересобери image. DAG-файл монтируется отдельно и обновляется иначе.
+[Загрузчик](../../../../labs/airflow/dags/housing_pipeline.py) только вызывает твою `build_dag`. Готовый [runtime](../../../../labs/housing/src/housing/airflow_runtime.py) запускает сохранённое обучение в отдельной ML-среде и проверяет результат. Реализовывать subprocess в этом задании не нужно.
 
-Для пояснения обозначим устойчивый ключ одного обучения как `key-1`, а его каталог — `/work/runs/key-1`. Если output равен этому пути, правильный subprocess получает этот путь одним аргументом, выполняет `housing.train` и создаёт четыре файла. Только после их проверки функция возвращает `{"path":"/work/runs/key-1","run_key":"key-1"}`. Если процесс вернул код 1, функция должна сообщить об ошибке, а не выдавать metadata успешного результата. Offline-тест перехватывает subprocess и проверяет контракт. Настоящее обучение и статус task подтверждаются отдельно в Airflow.
+Сначала заверши ML-notebook, сохрани его и подготовь CSV `work/housing.csv`. Импорты уже предоставлены в заготовке. Если SDK отсутствует на host, используй контейнер из [подготовки модуля](../../README.md#подготовка-к-заданиям).
 
-## `run_training`: вызвать CLI и проверить файлы
+## Интерфейс и настройки DAG
 
 ```python
-def run_training(
-    data_path: str | Path, output_path: str | Path, seed: int = 42
-) -> dict:
+def build_dag(stage: int = 1) -> DAG:
     ...
 ```
 
-| Параметр | Тип | Формат и смысл | Откуда берётся | Пример |
-|---|---|---|---|---|
-| `data_path` | `str` или `Path` | Путь к существующему housing CSV в файловой системе процесса обучения | Возвращает `validate_data` DAG | `"/work/housing.csv"` |
-| `output_path` | `str` или `Path` | Каталог четырёх результатов. Последняя часть имени является `run_key` | DAG формирует его из устойчивого ключа | `Path("/work/runs/key-1")` |
-| `seed` | `int`, по умолчанию `42` | Настройка случайных операций существующего train | Конфигурация запуска | `17` |
+| Аргумент | Тип и источник | Назначение |
+|---|---|---|
+| `stage` | `int`: 1, 2 или 3. Загрузчик читает `MLOPS_AIRFLOW_STAGE`, default 1 | Выбирает состав графа при разборе файла, а не конфигурацию будущей задачи |
 
-Функция запускает `/opt/housing-venv/bin/python -m housing.train` через `subprocess.run`. Передай `--data`, `--output` и `--seed` отдельными элементами массива аргументов. Нужны `check=True` и выполнение без `shell=True`. Например, путь `"/work/input with spaces.csv"` должен остаться одним аргументом. В тесте проверяются ровно эти три CLI-настройки.
+Верни настоящий объект `airflow.sdk.DAG`. Внутри `build_dag` создай фабрику с `@dag` и вызови её. Имя графа — `housing_pipeline`. Для этапа 1 задай `schedule=None`, `start_date=datetime(2025, 1, 1, tzinfo=timezone.utc)`, `catchup=False`, `max_active_runs=1`. У задач первого этапа задай `retries=0`, чтобы ошибка входа не превращалась в долгий повтор.
 
-После кода 0 проверь наличие `model.joblib`, `metrics.json`, `manifest.json`, `split.json` в output. Только тогда верни словарь:
+Создай следующие DAG-level Params. Значения путей относятся к файловой системе контейнера:
+
+| Имя | Default | Схема и смысл |
+|---|---|---|
+| `data_path` | `/work/housing.csv` | `type="string"`, путь CSV |
+| `seed` | `42` | `type="integer"`, настройка обучения |
+| `output_root` | `/work/runs` | `type="string"`, родитель папок отдельных обучений |
+
+Выполнение тестов переопределяет пути временными каталогами. Не зашивай `/work/runs` в тело задачи вместо чтения параметров. Настройки конкретного запуска бери через `get_current_context()["params"]` только внутри задачи.
+
+## Задача validate_data
+
+Создай её декоратором `@task` с `task_id="validate_data"`. Подготовь необязательный аргумент `interval=None`: в первом этапе он не передаётся, в третьем получит результат задачи интервала.
+
+Внутри задачи прочитай параметры запуска и вызови готовую функцию:
 
 ```python
-# При output_path == Path("/work/runs/key-1"):
-{"path": "/work/runs/key-1", "run_key": "key-1"}
+def prepare_training(data_path, seed=42, *, output_root="/work/runs", interval=None) -> dict:
+    ...
 ```
 
-Иных полей в XCom train нет. Это указатель на результат, а не содержимое модели. Ошибка CLI пробрасывается как `subprocess.CalledProcessError`. Если процесс завершился успешно, но не создал один из файлов, функция должна завершиться ошибкой. Проверки допускают `FileNotFoundError`, `ValueError` или `RuntimeError` для такого неполного output. Не создавай фиктивные файлы вместо обучения. Быстрый тест подменяет subprocess и проверяет только этот контракт.
-
-## Настройки и данные DAG
-
-`housing_pipeline.py` — описание графа. Не импортируй sklearn и не запускай обучение на верхнем уровне: scheduler читает файл при разборе DAG. ML-окружение отделено от Airflow и вызывается только внутри task.
-
-| Поле или шаг | Исходное значение и смысл | Что сделать |
+| Аргумент helper | Откуда взять | Пример |
 |---|---|---|
-| `dag_id` | `housing_pipeline`, имя графа для UI и CLI | Использовать это имя в командах ниже |
-| `schedule`, `catchup` | `None`, `False`: ручной запуск без создания прошлых интервалов | Сохранить для первого опыта. Расписание добавляется в теме 03 |
-| `max_active_runs` | `1`, одновременно выполняется один DAG run | Не запускать конкурирующие опыты с одним output |
-| `retries` у task | `1`, одна повторная попытка после первой неудачи | Проверять конкретную попытку и её логи |
-| `validate_data()` | Проверяет `/work/housing.csv`, возвращает строковый путь | Подготовить файл на host в `work/` |
-| `train_evaluate(data_path)` | Запускает учебный `run_training` отдельным ML-процессом | Доработать ключ и проверить полученные `{path, run_key}` |
-| `run_key` | В заготовке основан на SHA CSV, seed и строке `starter-v1` | Включить действительную версию кода и полную конфигурацию. Ключ не зависит от времени попытки |
-| `output` | `/work/runs/RUN_KEY` | Отдельный каталог каждого смыслового запуска |
-| `gate(metadata)`, `publish(metadata)` | Уже связаны в граф, тела пока поднимают `NotImplementedError` | Подключить функции тем 02–03 |
+| `data_path` | Runtime Param `data_path` | `/work/housing.csv` |
+| `seed` | Runtime Param `seed` | `17` |
+| `output_root` | Runtime Param `output_root` | `/work/runs` |
+| `interval` | В первом этапе `None`. Позже вход задачи через XCom | `None` |
 
-Путь `/work` — общий mount учебного контейнера. На нескольких workers локальный каталог сам по себе не станет общим: понадобится доступное всем хранилище. `metadata` между шагами остаётся небольшим JSON с путём и ключом. Ошибки разбора DAG проверяй до trigger: наличие файла в папке ещё не означает успешный импорт.
+Helper проверяет непустой файл и seed, рассчитывает SHA данных и исходников обучения, затем устойчивый ключ. Он возвращает конфигурацию: `data_path`, `seed`, `data_sha256`, `code_revision`, `interval`, `run_key`, `path`. При отсутствии CSV возникает `FileNotFoundError`, при неверном seed — `ValueError`. Не вызывай его во время построения DAG.
 
-## Проверка функции
+## Задача train_evaluate
 
-Из корня курса в [основной среде](../../../../SETUP.md#основная-среда):
+Создай `@task` с `task_id="train_evaluate"`. Её аргумент — конфигурация, возвращённая `validate_data`. Внутри задачи вызови готовую `run_training(configuration: dict) -> dict` и верни результат.
 
-```bash
-make task TASK=05-airflow/01-pipeline
+Helper запускает твою `train` в `/opt/housing-venv`, проверяет четыре файла и читает `model_version` из доверенного bundle внутри ML-среды. Результат содержит ровно три поля:
+
+```json
+{"path":"/work/runs/example-key","run_key":"example-key","model_version":"собственная-версия-модели"}
 ```
 
-[test_task.py](test_task.py) подменяет subprocess и проверяет аргументы, обработку кода завершения и полноту файлов. До реализации ожидается `NotImplementedError`. Для вызова из Python используй `course_tasks.load_task("05-airflow/01-pipeline")`. Отдельного CLI у заготовки нет.
+Строки выше показывают формат, настоящие значения вычисляет обучение. Ошибка ML-процесса, неполный комплект файлов или изменившиеся после проверки данные завершают задачу ошибкой. Не подменяй результат фиктивными метриками или моделью.
 
-## Требования практического опыта
+Свяжи задачи передачей TaskFlow-результата `validate_data` в `train_evaluate`. Модель не возвращается через XCom. Первый этап не должен загружать или вызывать `attach_release` и `attach_interval_context` незавершённых заданий.
 
-Пересобери стенд после правки `solution.py` по [подготовке модуля](../../README.md#подготовка-к-заданиям). В `housing_pipeline.py` уже есть вызов ML-процесса. Проверь его результат после своей реализации `run_training` и доработки ключа. Следующие `gate` и `publish` пока могут оставаться заготовками тем 02–03.
+## Проверка SDK
 
-```bash
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags list-import-errors
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags unpause housing_pipeline
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags trigger housing_pipeline
-docker compose -f labs/airflow/compose.yaml exec airflow airflow dags list-runs housing_pipeline
-```
-
-Новый DAG по умолчанию paused. Команда unpause разрешает scheduler запускать задачи. trigger без неё может оставить run в queued. После trigger повтори list-runs через несколько секунд и проверь переход в running. Открой task instance `train_evaluate`: после реализации она должна завершиться success и сохранить четыре файла. Весь DagRun станет success только после реализации следующих `gate` и `publish`. До этого их учебное исключение ожидаемо. Пустая таблица означает, что run не создан или выбран другой DAG.
-
-У учебной task задан `retries=1`. Стандартная пауза перед повтором составляет пять минут. Поэтому после первого NotImplementedError можно увидеть `up_for_retry`, пока DAG run ещё running. Смотри состояние и логи конкретной task, а не только общий статус DAG.
-
-## Настоящий SDK и загрузка DAG
-
-`housing_pipeline.py` импортирует декораторы и context из `airflow.sdk` (Airflow 3.1.0). Отдельные `gate` и `publish` уже видны в графе как **заготовки действий**: их тела оставлены с `NotImplementedError`, реализуй их по темам 02/03. Передача metadata по зависимостям не заменяет проверку качества и публикацию.
-
-Когда контейнер уже запущен, проверь импорт настоящим Airflow внутри него:
+После реализации запусти в контейнере:
 
 ```bash
-MLOPS_RUN_INTEGRATION=1 python -m pytest modules/05-airflow/tasks/01-pipeline/test_task.py -m integration -q
+docker compose -f labs/airflow/compose.yaml exec -T -e MLOPS_RUN_SDK=1 airflow python -m pytest /course/modules/05-airflow/tasks/01-pipeline/test_task.py -q
 ```
 
-Эта read-only проверка не поднимает контейнеры и не запускает tasks: настоящий `DagBag` проверяет импорт SDK, task IDs, зависимости и retry. Успешный импорт **не означает** выполненное обучение. Временные metadata `{path, run_key}` — контракт XCom train. Содержимое joblib/DataFrame туда не передаётся. Реальное выполнение всего DAG до реализации новых tasks ожидаемо падает с `NotImplementedError`.
+Проверяется настоящий DAG, отсутствие обучения при построении, чтение seed конкретного запуска, четыре файла, небольшой XCom и отказ отсутствующего CSV. Исполняемые проверки вызывают сохранённые функции notebook на синтетических данных в изолированной среде Airflow. Незавершённые функции предыдущего модуля вызывают реальную ошибку, а не пропуск.
 
-После реализации функций и DAG используй существующий учебный стенд:
+На host `make task TASK=05-airflow/01-pipeline` без флага SDK соберёт и пропустит эти проверки. Это не подтверждение выполнения задания.
+
+## Запуск через scheduler
 
 ```bash
-docker compose -f labs/airflow/compose.yaml exec -T airflow airflow dags test housing_pipeline 2025-01-01T00:00:00+00:00
+export MLOPS_AIRFLOW_STAGE=1
+docker compose -f labs/airflow/compose.yaml up -d --build
+docker compose -f labs/airflow/compose.yaml exec -T airflow airflow dags list-import-errors
+docker compose -f labs/airflow/compose.yaml exec -T airflow airflow dags unpause housing_pipeline
+docker compose -f labs/airflow/compose.yaml exec -T airflow airflow dags trigger --conf '{"seed":17}' housing_pipeline
+docker compose -f labs/airflow/compose.yaml exec -T airflow airflow dags list-runs housing_pipeline
 ```
 
-Команда исполняет tasks и пишет реальные DAG/task metadata и файлы в `/work`. Выбери отдельный output для опыта. Команда приведена в [CLI Airflow 3.1.0](https://airflow.apache.org/docs/apache-airflow/3.1.0/cli-and-env-variables-ref.html). `dags test` помогает отладке, но работа scheduler/retry и двух прошлых интервалов подтверждается отдельным опытом через UI по темам 02/03. Не используй mark-success, чтобы превратить невыполненный task в доказательство выполнения.
+Запиши идентификатор нужного запуска из CLI или UI. Открой его задачи: обе должны стать `success`, весь DagRun тоже должен завершиться успешно. В XCom `train_evaluate` найди путь и сопоставь его с `work/runs/` на host. В `manifest.json` должен быть seed 17.
+
+Если run остаётся queued, проверь, что DAG снят с паузы и scheduler работает. Если импорт падает на `NotImplementedError`, реализация фабрики ещё не сохранена или не завершена. Если падает ML-процесс, проверь сохранённый notebook и четыре ожидаемых файла.
 
 ## Завершение
 
-Сохрани файлы обучения и их `run_key` для следующей темы. Если прерываешь работу, останови стенд по [инструкции модуля](../../README.md#остановка-стенда). История в volume сохраняется.
+Сохрани код и результаты для второго задания. При перерыве останови стенд через `docker compose -f labs/airflow/compose.yaml down`. Папки обучения и история в volume сохраняются.

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
+from course_tasks import load_task
 
 pytestmark = [
     pytest.mark.integration,
@@ -67,3 +68,31 @@ with create_session() as session:
         )
         starts.add(start)
     assert len(starts) == 2
+
+
+@pytest.mark.writes
+def test_daily_publish_retry_preserves_original_interval(live_run, retry_evidence):
+    states, folder, run_id = live_run(stage=3, fail_publish_once=True)
+    assert all(row["state"] == "success" for row in states.values())
+    records = list((folder / "runs").glob("*/orchestration.json"))
+    releases = list((folder / "releases").glob("*.json"))
+    assert len(records) == len(releases) == 1
+    record = json.loads(records[0].read_text())
+    release = json.loads(releases[0].read_text())
+    assert record["run_key"] == release["run_key"] == records[0].parent.name
+    evidence = retry_evidence(run_id)
+    assert record["interval"] == {
+        "data_interval_start": evidence["start"],
+        "data_interval_end": evidence["end"],
+        "partition": datetime.fromisoformat(evidence["start"]).date().isoformat(),
+    }
+    checks = load_task("05-airflow/02-gate-retry", filename="test_airflow.py")
+    checks.assert_publication_precedes_failure(releases[0].stat().st_mtime, evidence)
+    attempts = evidence["attempts"]
+    assert attempts["publish"] == 2
+    assert (
+        attempts["prepare_interval"]
+        == attempts["validate_data"]
+        == attempts["train_evaluate"]
+        == 1
+    )

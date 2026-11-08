@@ -6,7 +6,7 @@ COPY labs/housing/requirements.txt /tmp/housing-requirements.txt
 RUN /opt/housing-venv/bin/pip install --no-cache-dir -r /tmp/housing-requirements.txt
 COPY labs/housing /opt/housing
 RUN /opt/housing-venv/bin/pip wheel --no-cache-dir --no-deps --wheel-dir /tmp/housing-wheels /opt/housing \
-    && /opt/housing-venv/bin/pip install --no-cache-dir --no-deps /tmp/housing-wheels/*.whl
+    && /opt/housing-venv/bin/pip install --no-cache-dir --force-reinstall --no-deps /tmp/housing-wheels/*.whl
 USER airflow
 
 COPY modules/tasks.json /course/modules/tasks.json
@@ -15,4 +15,9 @@ COPY modules/02-reproducibility/tasks /course/modules/02-reproducibility/tasks
 COPY modules/05-airflow/tasks /course/modules/05-airflow/tasks
 ENV MLOPS_COURSE_ROOT=/course
 # Scheduler only needs the pure-Python loader; ML dependencies stay in the separate venv.
-RUN pip install --no-cache-dir --no-deps /tmp/housing-wheels/*.whl
+RUN pip install --no-cache-dir "apache-airflow==3.1.0" "pytest==8.3.5" \
+    && pip install --no-cache-dir --force-reinstall --no-deps /tmp/housing-wheels/*.whl
+COPY modules/05-airflow/conftest.py /course/modules/05-airflow/conftest.py
+COPY pytest.ini /course/pytest.ini
+
+ENV PYTEST_ADDOPTS="-o cache_dir=/tmp/course-pytest-cache"

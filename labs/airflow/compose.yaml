@@ -9,9 +9,14 @@ services:
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__PARALLELISM: "2"
+      MLOPS_AIRFLOW_STAGE: "${MLOPS_AIRFLOW_STAGE:-1}"
     volumes:
       - airflow-home:/opt/airflow
-      - ../../modules/05-airflow/tasks/01-pipeline/housing_pipeline.py:/opt/airflow/dags/housing_pipeline.py:ro
+      - ./dags/housing_pipeline.py:/opt/airflow/dags/housing_pipeline.py:ro
+      - ../../modules/05-airflow/tasks:/course/modules/05-airflow/tasks:ro
+      - ../../modules/01-ml/housing.ipynb:/course/modules/01-ml/housing.ipynb:ro
+      - ../../modules/05-airflow/conftest.py:/course/modules/05-airflow/conftest.py:ro
+      - ../../pytest.ini:/course/pytest.ini:ro
       - ../../work:/work
     mem_limit: 4g
 volumes:

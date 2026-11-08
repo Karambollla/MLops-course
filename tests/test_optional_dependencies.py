@@ -67,3 +67,26 @@ def test_functions_explain_missing_sdk(
         monkeypatch.setattr(solution, name, None, raising=False)
     with pytest.raises(RuntimeError, match=requirements):
         getattr(solution, function)(*args)
+
+
+@pytest.mark.parametrize(
+    "task_id,function,args,sdk_name",
+    [
+        ("05-airflow/01-pipeline", "build_dag", (1,), "dag"),
+        ("05-airflow/02-gate-retry", "attach_release", ({},), "task"),
+        (
+            "05-airflow/03-failure-intervals",
+            "daily_schedule",
+            (),
+            "CronDataIntervalTimetable",
+        ),
+        ("05-airflow/03-failure-intervals", "attach_interval_context", (), "task"),
+    ],
+)
+def test_airflow_starters_explain_missing_sdk(
+    monkeypatch, task_id, function, args, sdk_name
+):
+    solution = load_task(task_id)
+    monkeypatch.setattr(solution, sdk_name, None)
+    with pytest.raises(RuntimeError, match="labs/airflow"):
+        getattr(solution, function)(*args)

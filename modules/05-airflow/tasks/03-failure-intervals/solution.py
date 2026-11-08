@@ -1,17 +1,35 @@
-"""Учебная заготовка. Контракт: README.md рядом с файлом."""
+"""Получай интервал из контекста настоящей задачи, не из текущего времени."""
+
+from __future__ import annotations
 
 # ruff: noqa: F401
-# Импорты подготовлены для самостоятельной реализации задания.
+from typing import Any
 
-from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from housing.airflow_runtime import interval_metadata
+
+try:
+    from airflow.sdk import get_current_context, task
+    from airflow.timetables.interval import CronDataIntervalTimetable
+except ModuleNotFoundError as error:
+    if error.name != "airflow":
+        raise
+    get_current_context = task = CronDataIntervalTimetable = None
 
 
-def interval_manifest(start: str, end: str) -> dict:
-    # TODO: aware datetime, UTC, границы одного дня без now().
-    raise NotImplementedError("Зафиксируй интервал")
+def daily_schedule() -> CronDataIntervalTimetable:
+    if CronDataIntervalTimetable is None:
+        raise RuntimeError(
+            "Airflow SDK отсутствует. Запусти проверки в контейнере labs/airflow по README модуля."
+        )
+    # TODO: настоящий CronDataIntervalTimetable('0 0 * * *', timezone='UTC').
+    raise NotImplementedError("Создай суточное расписание Airflow")
 
 
-def resume_publish(state: dict, publish_fn) -> dict:
-    # TODO: retry опубликованного шага без дубля и без мутации state.
-    raise NotImplementedError("Восстанови шаг publish")
+def attach_interval_context() -> Any:
+    if task is None:
+        raise RuntimeError(
+            "Airflow SDK отсутствует. Запусти проверки в контейнере labs/airflow по README модуля."
+        )
+    # TODO: @task(task_id='prepare_interval'), get_current_context() внутри тела.
+    # Передай ctx['data_interval_start/end'] готовой interval_metadata и верни XCom.
+    raise NotImplementedError("Добавь задачу prepare_interval через airflow.sdk")

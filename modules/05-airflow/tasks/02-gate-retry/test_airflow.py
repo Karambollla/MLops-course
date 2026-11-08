@@ -63,3 +63,35 @@ with create_session() as session:
     else:
         assert states["gate"]["state"] in {"failed", "skipped"}
         assert states["publish"]["state"] in {"upstream_failed", "skipped"}
+
+
+@pytest.mark.writes
+def test_scheduler_retries_publish_after_side_effect_without_retraining(
+    live_run, retry_evidence
+):
+    states, folder, run_id = live_run(fail_publish_once=True)
+    assert all(row["state"] == "success" for row in states.values())
+    evidence = retry_evidence(run_id)
+    attempts = evidence["attempts"]
+    assert attempts["publish"] == 2
+    assert attempts["train_evaluate"] == attempts["validate_data"] == 1
+    releases = list((folder / "releases").glob("*.json"))
+    assert len(releases) == 1
+    release = json.loads(releases[0].read_text())
+    assert releases[0].stem == release["run_key"]
+    assert_publication_precedes_failure(releases[0].stat().st_mtime, evidence)
+
+
+@pytest.mark.writes
+def test_scheduler_gate_rejection_never_publishes(live_run):
+    states, folder, _ = live_run(gate_ratio=0.0)
+    assert states["train_evaluate"]["state"] == "success"
+    assert states["gate"]["state"] == "failed"
+    assert states["publish"]["state"] == "upstream_failed"
+    assert not list((folder / "releases").glob("*.json"))
+
+
+def assert_publication_precedes_failure(release_mtime, evidence):
+    assert (
+        release_mtime <= evidence["first_failure_at"] < evidence["second_started_at"]
+    ), "Release must exist before first failure and remain unchanged on retry"

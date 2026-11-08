@@ -1,118 +1,60 @@
-"""Offline проверки поведения; исходная заготовка должна быть RED."""
+"""These checks build/execute the learner's DAG using the real Airflow SDK."""
 
-import os
-import subprocess
-from pathlib import Path
+import json
 
 import pytest
-from course_tasks import load_solution
+from course_tasks import load_task
 
-s = load_solution(__file__)
+pytestmark = pytest.mark.sdk
 
 
-@pytest.mark.parametrize("seed", [42, 17, 901])
-def test_training_uses_cli_and_metadata(tmp_path, monkeypatch, seed):
-    data = tmp_path / "input with spaces.csv"
-    data.write_text("x\n1\n")
-    out = tmp_path / "runs" / "key-1"
-    calls = []
+def test_real_dag_structure_without_training_at_parse_time(
+    build, monkeypatch, tmp_path, dag_type
+):
+    s = load_task("05-airflow/01-pipeline")
+    original = s.load_task
 
-    def fake_run(command, **kwargs):
-        calls.append((command, kwargs))
-        assert isinstance(command, list) and kwargs.get("check") is True
-        assert not kwargs.get("shell", False)
-        assert command[:3] == ["/opt/housing-venv/bin/python", "-m", "housing.train"]
-        assert command[command.index("--data") + 1] == str(data)
-        assert command[command.index("--output") + 1] == str(out)
-        assert len(command) == 9
-        assert dict(zip(command[3::2], command[4::2])) == {
-            "--data": str(data),
-            "--output": str(out),
-            "--seed": str(seed),
+    def forbidden(*args, **kwargs):
+        pytest.fail("DAG parsing must not train, read CSV or publish")
+
+    def only_stage_one(task_id, **kwargs):
+        assert task_id not in {
+            "05-airflow/02-gate-retry",
+            "05-airflow/03-failure-intervals",
         }
-        out.mkdir(parents=True, exist_ok=True)
-        for name in ["model.joblib", "metrics.json", "manifest.json", "split.json"]:
-            (out / name).write_text("{}")
-        return subprocess.CompletedProcess(command, 0)
+        return original(task_id, **kwargs)
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
-    assert s.run_training(data, out, seed) == {"path": str(out), "run_key": "key-1"}
-    assert len(calls) == 1
-
-
-def test_failed_training_propagates(tmp_path, monkeypatch):
-    data = tmp_path / "input.csv"
-    data.touch()
-
-    def failure(*a, **kw):
-        raise subprocess.CalledProcessError(1, a[0])
-
-    monkeypatch.setattr(subprocess, "run", failure)
-    with pytest.raises(subprocess.CalledProcessError):
-        s.run_training(data, tmp_path / "out")
+    monkeypatch.setattr(s, "prepare_training", forbidden)
+    monkeypatch.setattr(s, "run_training", forbidden)
+    monkeypatch.setattr(s, "load_task", only_stage_one)
+    dag = build(1)
+    assert isinstance(dag, dag_type)
+    assert dag.dag_id == "housing_pipeline"
+    assert set(dag.task_ids) == {"validate_data", "train_evaluate"}
+    assert dag.get_task("validate_data").downstream_task_ids == {"train_evaluate"}
+    assert dag.catchup is False and dag.max_active_runs == 1
+    assert dag.schedule is None
+    assert list(tmp_path.iterdir()) == []
 
 
-@pytest.mark.parametrize(
-    "missing", ["model.joblib", "metrics.json", "manifest.json", "split.json"]
-)
-def test_successful_process_requires_every_artifact(tmp_path, monkeypatch, missing):
-    output = tmp_path / "runs" / "key"
-
-    def incomplete(command, **kwargs):
-        output.mkdir(parents=True)
-        for name in ["model.joblib", "metrics.json", "manifest.json", "split.json"]:
-            if name != missing:
-                (output / name).write_text("{}")
-        return subprocess.CompletedProcess(command, 0)
-
-    monkeypatch.setattr(subprocess, "run", incomplete)
-    try:
-        s.run_training(tmp_path / "data.csv", output, 17)
-    except NotImplementedError:
-        raise
-    except (FileNotFoundError, ValueError, RuntimeError):
-        pass
-    else:
-        pytest.fail(f"Successful process did not produce required {missing}")
+def test_training_executes_and_xcom_contains_only_model_reference(execute_dag):
+    result, folder = execute_dag(1)
+    assert result["state"] == "success", result
+    assert all(v["state"] == "success" for v in result["tasks"].values())
+    metadata = result["xcom"]["train_evaluate"]
+    assert set(metadata) == {"path", "run_key", "model_version"}
+    assert len(json.dumps(metadata)) < 4096
+    output = folder / "runs" / metadata["run_key"]
+    assert metadata["path"] == str(output)
+    assert isinstance(metadata["model_version"], str) and metadata["model_version"]
+    for name in ("model.joblib", "metrics.json", "manifest.json", "split.json"):
+        assert (output / name).stat().st_size > 0
+    assert json.loads((output / "manifest.json").read_text())["seed"] == 17
 
 
-@pytest.mark.integration
-def test_dag_loads_with_real_airflow_sdk_in_running_container():
-    """Read-only DagBag parse; never starts a service or executes a learner task."""
-    if os.getenv("MLOPS_RUN_INTEGRATION") != "1":
-        pytest.skip(
-            "Set MLOPS_RUN_INTEGRATION=1 with an already running Airflow container"
-        )
-    root = Path(__file__).resolve().parents[4]
-    script = """
-import airflow
-from airflow.models.dagbag import DagBag
-assert airflow.__version__ == "3.1.0", airflow.__version__
-bag = DagBag(dag_folder="/opt/airflow/dags/housing_pipeline.py", include_examples=False)
-assert not bag.import_errors, bag.import_errors
-dag = bag.dags.get("housing_pipeline")
-assert dag is not None
-assert {"validate_data", "train_evaluate", "gate", "publish"} <= set(dag.task_ids)
-assert "train_evaluate" in dag.get_task("validate_data").downstream_task_ids
-assert "gate" in dag.get_task("train_evaluate").downstream_task_ids
-assert "publish" in dag.get_task("gate").downstream_task_ids
-assert dag.get_task("publish").retries >= 1
-"""
-    result = subprocess.run(
-        [
-            "docker",
-            "compose",
-            "-f",
-            str(root / "labs/airflow/compose.yaml"),
-            "exec",
-            "-T",
-            "airflow",
-            "python",
-            "-c",
-            script,
-        ],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
+def test_missing_csv_fails_validate_and_blocks_training(execute_dag):
+    result, folder = execute_dag(1, data_path="/nonexistent-course-input.csv")
+    assert result["state"] == "failed"
+    assert result["tasks"]["validate_data"]["state"] == "failed"
+    assert result["tasks"]["train_evaluate"]["state"] == "upstream_failed"
+    assert not (folder / "runs").exists()
