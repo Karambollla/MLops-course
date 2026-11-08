@@ -19,7 +19,7 @@
 | 02 | [Воспроизводимость и DVC](modules/02-reproducibility/README.md) | Манифест эксперимента и версия данных |
 | 03 | [Сервис, Docker и CI](modules/03-service-ci/README.md) | API, образ и проверки |
 | 04 | [MLflow](modules/04-mlflow/README.md) | Сравнение запусков и версия модели |
-| 05 | [Airflow](modules/05-airflow/README.md) | Собственный DAG через Task SDK, retry и интервалы |
+| 05 | [Airflow](modules/05-airflow/README.md) | Самостоятельное создание DAG через Task SDK, затем retry и интервалы |
 | 06 | [ClearML](modules/06-clearml/README.md) | Эксперимент, артефакт и запуск через очередь |
 | 07 | [Kubernetes](modules/07-kubernetes/README.md) | Deployment, probes и диагностика |
 | 08 | [Helm](modules/08-helm/README.md) | Chart и проверенный откат |
